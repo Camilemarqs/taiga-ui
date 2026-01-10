@@ -2,117 +2,145 @@ import {TuiTime} from '@taiga-ui/cdk';
 import {tuiSwitchNgDevMode} from '@taiga-ui/testing';
 
 describe('TuiTime', () => {
+    // Testes para métodos estáticos da classe TuiTime
     describe('static method', () => {
+        // Validação de tempo válido/inválido
         describe('isValidTime returns', () => {
-            it('true for valid time', () => {
-                expect(TuiTime.isValidTime(2, 37)).toBe(true);
+            // Tempos válidos
+            describe('true for valid time', () => {
+                it('with hours and minutes', () => {
+                    expect(TuiTime.isValidTime(2, 37)).toBe(true);
+                });
+
+                it('with hours, minutes and seconds', () => {
+                    expect(TuiTime.isValidTime(2, 37, 12)).toBe(true);
+                });
+
+                it('with hours, minutes, seconds and milliseconds', () => {
+                    expect(TuiTime.isValidTime(2, 37, 2, 900)).toBe(true);
+                });
             });
 
-            it('true for valid time with seconds', () => {
-                expect(TuiTime.isValidTime(2, 37, 12)).toBe(true);
+            // Valores acima do limite máximo
+            describe('false for values above maximum', () => {
+                it('if hours are above 23', () => {
+                    expect(TuiTime.isValidTime(24, 45)).toBe(false);
+                });
+
+                it('if minutes are above 59', () => {
+                    expect(TuiTime.isValidTime(1, 94)).toBe(false);
+                });
+
+                it('if seconds are above 59', () => {
+                    expect(TuiTime.isValidTime(1, 1, 94)).toBe(false);
+                });
+
+                it('if milliseconds are above 999', () => {
+                    expect(TuiTime.isValidTime(1, 1, 1, 1000)).toBe(false);
+                });
             });
 
-            it('true for valid time with ms', () => {
-                expect(TuiTime.isValidTime(2, 37, 2, 900)).toBe(true);
+            // Valores abaixo do limite mínimo
+            describe('false for negative values', () => {
+                it('if minutes are below 0', () => {
+                    expect(TuiTime.isValidTime(2, -37)).toBe(false);
+                });
+
+                it('if hours are below 0', () => {
+                    expect(TuiTime.isValidTime(-2, 37)).toBe(false);
+                });
             });
 
-            it('false if hours are above 23', () => {
-                expect(TuiTime.isValidTime(24, 45)).toBe(false);
-            });
+            // Valores decimais (não são válidos)
+            describe('false for floating point values', () => {
+                it('if minutes are floating', () => {
+                    expect(TuiTime.isValidTime(2, 0.37)).toBe(false);
+                });
 
-            it('false if minutes are above 59', () => {
-                expect(TuiTime.isValidTime(1, 94)).toBe(false);
-            });
-
-            it('false if seconds are above 59', () => {
-                expect(TuiTime.isValidTime(1, 1, 94)).toBe(false);
-            });
-
-            it('false if ms are above 999', () => {
-                expect(TuiTime.isValidTime(1, 1, 1, 1000)).toBe(false);
-            });
-
-            it('false if minutes are below 0', () => {
-                expect(TuiTime.isValidTime(2, -37)).toBe(false);
-            });
-
-            it('false if hours are below 0', () => {
-                expect(TuiTime.isValidTime(-2, 37)).toBe(false);
-            });
-
-            it('false for floating hours', () => {
-                expect(TuiTime.isValidTime(2, 0.37)).toBe(false);
-            });
-
-            it('false for floating minutes', () => {
-                expect(TuiTime.isValidTime(0.2, 37)).toBe(false);
+                it('if hours are floating', () => {
+                    expect(TuiTime.isValidTime(0.2, 37)).toBe(false);
+                });
             });
         });
 
+        // Converte milissegundos absolutos para TuiTime
         describe('fromAbsoluteMilliseconds returns', () => {
-            it('00:00 for 0', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(0).toString()).toBe('00:00');
+            // Casos básicos de limite
+            describe('basic boundary cases', () => {
+                it('00:00 for 0', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(0).toString()).toBe('00:00');
+                });
+
+                it('23:59 for 86340000', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(86340000).toString()).toBe(
+                        '23:59',
+                    );
+                });
+
+                it('23:59:59.999 for 86399999', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(86399999).toString()).toBe(
+                        '23:59:59.999',
+                    );
+                });
             });
 
-            it('23:59 for 86340000', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(86340000).toString()).toBe(
-                    '23:59',
-                );
+            // Casos com valores acima do limite diário
+            describe('values above daily limit', () => {
+                it('25:00 for 90 000 000 without failed assertion', () => {
+                    tuiSwitchNgDevMode(true);
+
+                    const assertSpy = jest.spyOn(console, 'assert');
+
+                    const time = TuiTime.fromAbsoluteMilliseconds(90_000_000);
+
+                    expect(time.toString()).toBe('25:00');
+                    expect(
+                        assertSpy.mock.calls.map(([condition]) => condition),
+                    ).not.toContain(false);
+
+                    assertSpy.mockRestore();
+                    tuiSwitchNgDevMode(false);
+                });
             });
 
-            it('23:59:59.999 for 86399999', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(86399999).toString()).toBe(
-                    '23:59:59.999',
-                );
+            // Casos com milissegundos
+            describe('milliseconds conversion', () => {
+                it('0:0:0.001 for 1', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(1).toString()).toBe(
+                        '00:00:00.001',
+                    );
+                });
+
+                it('0:0:1.001 for 1001', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(1001).toString()).toBe(
+                        '00:00:01.001',
+                    );
+                });
+
+                it('0:1:0.001 for 60001 (no seconds, with ms)', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(60001).toString()).toBe(
+                        '00:01:00.001',
+                    );
+                });
             });
 
-            it('25:00 for 90 000 000 without failed assertion', () => {
-                tuiSwitchNgDevMode(true);
+            // Casos com múltiplas unidades de tempo
+            describe('multiple time units', () => {
+                it('0:1:1.001 for 61001', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(61001).toString()).toBe(
+                        '00:01:01.001',
+                    );
+                });
 
-                const assertSpy = jest.spyOn(console, 'assert');
-
-                const time = TuiTime.fromAbsoluteMilliseconds(90_000_000);
-
-                expect(time.toString()).toBe('25:00');
-                expect(
-                    assertSpy.mock.calls.map(([condition]) => condition),
-                ).not.toContain(false);
-
-                assertSpy.mockRestore();
-                tuiSwitchNgDevMode(false);
-            });
-
-            it('0:0:0.001 for 1', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(1).toString()).toBe(
-                    '00:00:00.001',
-                );
-            });
-
-            it('0:0:1.001 for 1001', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(1001).toString()).toBe(
-                    '00:00:01.001',
-                );
-            });
-
-            it('0:1:1.001 for 61001', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(61001).toString()).toBe(
-                    '00:01:01.001',
-                );
-            });
-
-            it('0:1:0.001 for 60001 (no seconds, with ms)', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(60001).toString()).toBe(
-                    '00:01:00.001',
-                );
-            });
-
-            it('1:1:1.555 for 3601555', () => {
-                expect(TuiTime.fromAbsoluteMilliseconds(3601555).toString()).toBe(
-                    '01:00:01.555',
-                );
+                it('1:0:1.555 for 3601555', () => {
+                    expect(TuiTime.fromAbsoluteMilliseconds(3601555).toString()).toBe(
+                        '01:00:01.555',
+                    );
+                });
             });
         });
 
+        // Converte string para TuiTime
         describe('fromString returns', () => {
             it('from 00:00', () => {
                 const time = TuiTime.fromString('00:00');
@@ -145,6 +173,7 @@ describe('TuiTime', () => {
                 expect(time.ms).toBe(888);
             });
 
+            // Modo AM/PM (formato 12 horas)
             describe('mode with AM / PM', () => {
                 (
                     [
@@ -175,6 +204,7 @@ describe('TuiTime', () => {
             });
         });
 
+        // Retorna o tempo atual (UTC)
         describe('current', () => {
             it('returns valid tuiDay', () => {
                 const time = TuiTime.current();
@@ -186,6 +216,7 @@ describe('TuiTime', () => {
             });
         });
 
+        // Retorna o tempo atual no fuso horário local
         describe('currentLocal', () => {
             it('returns valid tuiDay', () => {
                 const time = TuiTime.currentLocal();
@@ -198,6 +229,8 @@ describe('TuiTime', () => {
         });
     });
 
+    // Testes para métodos de instância
+    // Converte TuiTime para milissegundos absolutos
     describe('prototype method toAbsoluteMilliseconds returns', () => {
         it('0 for TuiTime(00:00)', () => {
             expect(new TuiTime(0, 0).toAbsoluteMilliseconds()).toBe(0);
@@ -228,179 +261,201 @@ describe('TuiTime', () => {
         });
     });
 
+    // Desloca o tempo (adiciona/subtrai horas, minutos, segundos, milissegundos)
     describe('shift method', () => {
-        it('hours are properly increased', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({hours: 5});
+        const baseTime = new TuiTime(6, 36);
 
-            expect(increasedTime.toString()).toBe('11:36');
+        // Ajustes simples de horas e minutos
+        describe('simple hour and minute adjustments', () => {
+            describe('increasing values', () => {
+                it('hours are properly increased', () => {
+                    const increasedTime = baseTime.shift({hours: 5});
+
+                    expect(increasedTime.toString()).toBe('11:36');
+                });
+
+                it('minutes are properly increased', () => {
+                    const increasedTime = baseTime.shift({minutes: 5});
+
+                    expect(increasedTime.toString()).toBe('06:41');
+                });
+            });
+
+            describe('decreasing values', () => {
+                it('hours are properly decreased', () => {
+                    const decreasedTime = baseTime.shift({hours: -5});
+
+                    expect(decreasedTime.toString()).toBe('01:36');
+                });
+
+                it('minutes are properly decreased', () => {
+                    const decreasedTime = baseTime.shift({minutes: -5});
+
+                    expect(decreasedTime.toString()).toBe('06:31');
+                });
+            });
         });
 
-        it('minutes are properly increased', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({minutes: 5});
+        // Transições de dia (loop de 24 horas)
+        describe('day transitions (24-hour loop)', () => {
+            it('hours are properly looped if shifted value is above 24 hours', () => {
+                const loopedTime = baseTime.shift({hours: 25});
 
-            expect(increasedTime.toString()).toBe('06:41');
+                expect(loopedTime.toString()).toBe('07:36');
+            });
+
+            it('hours are properly looped if shifted value is less than -24 hours', () => {
+                const loopedTime = baseTime.shift({hours: -25});
+
+                expect(loopedTime.toString()).toBe('05:36');
+            });
+
+            it('hours and minutes are properly added if shifted value is above 60 * 24', () => {
+                const loopedTime = baseTime.shift({minutes: 60 * 24 + 1});
+
+                expect(loopedTime.toString()).toBe('06:37');
+            });
         });
 
-        it('hours are properly decreased', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({hours: -5});
+        // Transições de hora (minutos acima de 60)
+        describe('hour transitions (minutes above 60)', () => {
+            it('hours and minutes are properly added if shifted value is above 60', () => {
+                const shiftedTime = baseTime.shift({minutes: 65});
 
-            expect(increasedTime.toString()).toBe('01:36');
+                expect(shiftedTime.toString()).toBe('07:41');
+            });
+
+            it('hours and minutes are properly decreased if shifted value is less than -60', () => {
+                const shiftedTime = baseTime.shift({minutes: -65});
+
+                expect(shiftedTime.toString()).toBe('05:31');
+            });
         });
 
-        it('minutes are properly decreased', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({minutes: -5});
+        // Ajustes combinados de múltiplas unidades
+        describe('combined time unit adjustments', () => {
+            const timeWithSeconds = new TuiTime(6, 36, 1);
 
-            expect(increasedTime.toString()).toBe('06:31');
+            describe('adding multiple units', () => {
+                it('simple hours, minutes, seconds adding', () => {
+                    const increasedTime = timeWithSeconds.shift({
+                        hours: 1,
+                        minutes: 1,
+                        seconds: 1,
+                    });
+
+                    expect(increasedTime.toString()).toBe('07:37:02');
+                });
+
+                it('simple hours, minutes, seconds, ms adding', () => {
+                    const increasedTime = timeWithSeconds.shift({
+                        hours: 1,
+                        minutes: 1,
+                        seconds: 1,
+                        ms: 10,
+                    });
+
+                    expect(increasedTime.toString()).toBe('07:37:02.010');
+                });
+            });
+
+            describe('decreasing multiple units', () => {
+                it('simple hours, minutes, seconds decreasing', () => {
+                    const decreasedTime = timeWithSeconds.shift({
+                        hours: -1,
+                        minutes: -1,
+                        seconds: -1,
+                    });
+
+                    expect(decreasedTime.toString()).toBe('05:35');
+                });
+
+                it('simple hours, minutes, seconds, ms decreasing', () => {
+                    const timeWithMs = new TuiTime(6, 36, 1, 20);
+                    const decreasedTime = timeWithMs.shift({
+                        hours: -1,
+                        minutes: -1,
+                        seconds: -1,
+                        ms: -10,
+                    });
+
+                    expect(decreasedTime.toString()).toBe('05:35:00.010');
+                });
+            });
         });
 
-        it('hours are properly looped if shifted value is above 24 hours', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({hours: 25});
-
-            expect(increasedTime.toString()).toBe('07:36');
-        });
-
-        it('hours are properly looped if shifted value is less than -24 hours', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({hours: -25});
-
-            expect(increasedTime.toString()).toBe('05:36');
-        });
-
-        it('hours and minutes are properly added if shifted value is above 60', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({minutes: 65});
-
-            expect(increasedTime.toString()).toBe('07:41');
-        });
-
-        it('hours and minutes are properly decreased if shifted value is less than -60', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({minutes: -65});
-
-            expect(increasedTime.toString()).toBe('05:31');
-        });
-
-        it('hours and minutes are properly added if shifted value is above 60 * 24', () => {
-            const time = new TuiTime(6, 36);
-            const increasedTime = time.shift({minutes: 60 * 24 + 1});
-
-            expect(increasedTime.toString()).toBe('06:37');
-        });
-
-        it('simple hours, minutes, seconds adding', () => {
+        // Casos com valores grandes (conversões complexas entre unidades)
+        describe('large value conversions', () => {
             const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                hours: 1,
-                minutes: 1,
-                seconds: 1,
+
+            describe('adding large values', () => {
+                it('with big ms number adding', () => {
+                    const increasedTime = time.shift({
+                        ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
+                    });
+
+                    expect(increasedTime.toString()).toBe('07:37:02.010');
+                });
+
+                it('with big seconds and ms number adding', () => {
+                    const increasedTime = time.shift({
+                        seconds: 60 * 10 + 5,
+                        ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
+                    });
+
+                    expect(increasedTime.toString()).toBe('07:47:07.010');
+                });
+
+                it('with big minutes, seconds and ms number adding', () => {
+                    const increasedTime = time.shift({
+                        minutes: 60 * 2 + 2,
+                        seconds: 60 * 10 + 5,
+                        ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
+                    });
+
+                    expect(increasedTime.toString()).toBe('09:49:07.010');
+                });
             });
 
-            expect(increasedTime.toString()).toBe('07:37:02');
+            describe('decreasing large values', () => {
+                it('with big minutes, seconds and ms number decreasing', () => {
+                    const decreasedTime = time.shift({
+                        minutes: -60 * 2 - 2,
+                        seconds: -60 * 10 - 5,
+                        ms: -1000 * 60 * 60 - 1000 * 60 - 1000 - 10,
+                    });
+
+                    expect(decreasedTime.toString()).toBe('03:22:54.990');
+                });
+            });
         });
 
-        it('simple hours, minutes, seconds decreasing', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                hours: -1,
-                minutes: -1,
-                seconds: -1,
+        // Transições de unidades (quando uma unidade atinge seu limite)
+        describe('unit transitions at boundaries', () => {
+            it('seconds are increased if milliseconds reach 1000', () => {
+                const time = new TuiTime(15, 0, 0, 999);
+                const increasedTime = time.shift({ms: 1});
+
+                expect(increasedTime.toString()).toBe('15:00:01');
             });
 
-            expect(increasedTime.toString()).toBe('05:35');
-        });
+            it('minutes are increased if seconds reach 60', () => {
+                const time = new TuiTime(15, 0, 59);
+                const increasedTime = time.shift({seconds: 1});
 
-        it('simple hours, minutes, seconds, ms adding', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                hours: 1,
-                minutes: 1,
-                seconds: 1,
-                ms: 10,
+                expect(increasedTime.toString()).toBe('15:01');
             });
 
-            expect(increasedTime.toString()).toBe('07:37:02.010');
-        });
+            it('hours are increased if minutes reach 60', () => {
+                const time = new TuiTime(15, 59);
+                const increasedTime = time.shift({minutes: 1});
 
-        it('simple hours, minutes, seconds, ms decreasing', () => {
-            const time = new TuiTime(6, 36, 1, 20);
-            const increasedTime = time.shift({
-                hours: -1,
-                minutes: -1,
-                seconds: -1,
-                ms: -10,
+                expect(increasedTime.toString()).toBe('16:00');
             });
-
-            expect(increasedTime.toString()).toBe('05:35:00.010');
-        });
-
-        it('with big ms number adding', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
-            });
-
-            expect(increasedTime.toString()).toBe('07:37:02.010');
-        });
-
-        it('with big seconds and ms number adding', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                seconds: 60 * 10 + 5,
-                ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
-            });
-
-            expect(increasedTime.toString()).toBe('07:47:07.010');
-        });
-
-        it('with big minutes, seconds and ms number adding', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                minutes: 60 * 2 + 2,
-                seconds: 60 * 10 + 5,
-                ms: 1000 * 60 * 60 + 1000 * 60 + 1000 + 10,
-            });
-
-            expect(increasedTime.toString()).toBe('09:49:07.010');
-        });
-
-        it('with big minutes, seconds and ms number decreasing', () => {
-            const time = new TuiTime(6, 36, 1);
-            const increasedTime = time.shift({
-                minutes: -60 * 2 - 2,
-                seconds: -60 * 10 - 5,
-                ms: -1000 * 60 * 60 - 1000 * 60 - 1000 - 10,
-            });
-
-            expect(increasedTime.toString()).toBe('03:22:54.990');
-        });
-
-        it('seconds are increased if milliseconds reach 1000', () => {
-            const time = new TuiTime(15, 0, 0, 999);
-            const increasedTime = time.shift({ms: 1});
-
-            expect(increasedTime.toString()).toBe('15:00:01');
-        });
-
-        it('minutes are increased if seconds reach 60', () => {
-            const time = new TuiTime(15, 0, 59);
-            const increasedTime = time.shift({seconds: 1});
-
-            expect(increasedTime.toString()).toBe('15:01');
-        });
-
-        it('hours are increased if minutes reach 60', () => {
-            const time = new TuiTime(15, 59);
-            const increasedTime = time.shift({minutes: 1});
-
-            expect(increasedTime.toString()).toBe('16:00');
         });
     });
 
+    // Formatação de TuiTime como string (com diferentes modos)
     describe('toString(mode) method', () => {
         it('without mode parameter', () => {
             const time = new TuiTime(6, 36, 1, 1);
@@ -420,6 +475,7 @@ describe('TuiTime', () => {
             expect(time.toString('HH:MM:SS.MSS')).toBe('06:36:00.000');
         });
 
+        // Formato 12 horas com AM/PM
         describe('HH:MM AA', () => {
             (
                 [
@@ -442,6 +498,7 @@ describe('TuiTime', () => {
         });
     });
 
+    // Conversão para valor primitivo numérico
     describe('valueOf returns', () => {
         it('the primitive value of TuiTime', () => {
             const time = new TuiTime(6, 36, 0, 0);
@@ -453,6 +510,7 @@ describe('TuiTime', () => {
         });
     });
 
+    // Conversão primitiva com Symbol.toPrimitive (controle explícito do tipo)
     describe('Symbol.toPrimitive returns', () => {
         it('a number if the hint is number', () => {
             const time = new TuiTime(10, 36, 5, 0);
