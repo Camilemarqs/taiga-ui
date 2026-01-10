@@ -20,6 +20,10 @@ import {TuiDocSourceCode} from '../internal/source-code/source-code.component';
 import {TuiDocLanguageSwitcher} from '../language-switcher';
 import {PAGE_PROVIDERS, PAGE_SEE_ALSO, TUI_DOC_TABS} from './page.providers';
 import {TuiDocPageTabConnector} from './page-tab.directive';
+import {
+    type TuiDocPageMainConfig,
+    type TuiDocPageViewConfig,
+} from './page-config.interface';
 
 @Component({
     selector: 'tui-doc-page',
@@ -42,30 +46,47 @@ import {TuiDocPageTabConnector} from './page-tab.directive';
     providers: PAGE_PROVIDERS,
 })
 export class TuiDocPage {
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     protected readonly tabs = inject(TUI_DOC_TABS)(inject(ActivatedRoute).snapshot);
     protected readonly supportLanguage = inject(TUI_DOC_SUPPORT_LANGUAGE);
     protected readonly defaultTabs = inject(TUI_DOC_DEFAULT_TABS);
+    public readonly seeAlso = inject(PAGE_SEE_ALSO);
+
+    // INPUTS - Configurações do componente
+    public readonly header = input('');
+    public readonly package = input('');
+    public readonly type = input('');
+    public readonly tags = input<string[]>([]);
+    public readonly path = input('');
+    public readonly deprecated = input<boolean | ''>(false);
+
+    // CONTENT CHILDREN E MODEL
+    public readonly tabConnectors = contentChildren(TuiDocPageTabConnector);
+    public readonly activeItemIndex = model(0);
+
+    // PROPRIEDADES PROTEGIDAS - Constantes e helpers
     protected readonly from = / /g;
     protected readonly to = '_';
 
-    public readonly header = input('');
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
 
-    public readonly package = input('');
+    /** Configuração principal agrupada */
+    protected readonly mainConfig = computed<TuiDocPageMainConfig>(() => ({
+        header: this.header(),
+        package: this.package(),
+        type: this.type(),
+        tags: this.tags(),
+        path: this.path(),
+        deprecated: this.deprecated(),
+    }));
 
-    public readonly type = input('');
+    /** Configuração de visualização agrupada */
+    protected readonly viewConfig = computed<TuiDocPageViewConfig>(() => ({
+        activeItemIndex: this.activeItemIndex(),
+        showSeeAlso: this.showSeeAlso(),
+    }));
 
-    public readonly tags = input<string[]>([]);
-
-    public readonly path = input('');
-
-    public readonly deprecated = input<boolean | ''>(false);
-
-    public readonly tabConnectors = contentChildren(TuiDocPageTabConnector);
-
-    public readonly activeItemIndex = model(0);
-
-    public readonly seeAlso = inject(PAGE_SEE_ALSO);
-
+    // COMPUTED VALUES - Validação e estado
     public readonly showSeeAlso = computed((): boolean => {
         return !!this.seeAlso().length && this.activeItemIndex() === 0;
     });
