@@ -10,9 +10,6 @@ import {TuiMonthNumber} from './month-number';
 import {type TuiDateMode, type TuiDayLike} from './types';
 import {TuiYear} from './year';
 
-/**
- * Immutable date object, consisting of day, month and year
- */
 export class TuiDay extends TuiMonth {
     /**
      * @param year
@@ -28,28 +25,14 @@ export class TuiDay extends TuiMonth {
         ngDevMode && console.assert(TuiDay.isValidDay(year, month, day));
     }
 
-    /**
-     * Creates {@link TuiDay} from native {@link Date} based on local time zone
-     */
     public static fromLocalNativeDate(date: Date): TuiDay {
         return new TuiDay(date.getFullYear(), date.getMonth(), date.getDate());
     }
 
-    /**
-     * Creates {@link TuiDay} from native {@link Date} using UTC
-     */
     public static fromUtcNativeDate(date: Date): TuiDay {
         return new TuiDay(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     }
 
-    /**
-     * Check validity of year, month and day
-     *
-     * @param year
-     * @param month
-     * @param day
-     * @return boolean validity
-     */
     public static isValidDay(year: number, month: number, day: number): boolean {
         return (
             TuiMonth.isValidMonth(year, month) &&
@@ -62,9 +45,6 @@ export class TuiDay extends TuiMonth {
         );
     }
 
-    /**
-     * Current day based on local time zone
-     */
     public static override currentLocal(): TuiDay {
         const nativeDate = new Date();
         const year = nativeDate.getFullYear();
@@ -74,9 +54,6 @@ export class TuiDay extends TuiMonth {
         return new TuiDay(year, month, day);
     }
 
-    /**
-     * Returns current day based on UTC
-     */
     public static override currentUtc(): TuiDay {
         const nativeDate = new Date();
         const year = nativeDate.getUTCFullYear();
@@ -86,14 +63,6 @@ export class TuiDay extends TuiMonth {
         return new TuiDay(year, month, day);
     }
 
-    /**
-     * Calculates {@link TuiDay} normalizing year, month and day. {@link NaN} is turned into minimal value.
-     *
-     * @param year any year value, including invalid
-     * @param month any month value, including invalid (months start with 0)
-     * @param day any day value, including invalid
-     * @return normalized date
-     */
     public static normalizeOf(year: number, month: number, day: number): TuiDay {
         const normalizedYear = TuiYear.normalizeYearPart(year);
         const normalizedMonth = TuiMonth.normalizeMonthPart(month);
@@ -125,37 +94,51 @@ export class TuiDay extends TuiMonth {
 
         switch (dateMode) {
             case 'mm/dd/yyyy':
-                return {
-                    day: parseInt(date.slice(3, 5), 10),
-                    month: parseInt(date.slice(0, 2), 10) - 1,
-                    year: parseInt(date.slice(6, 10), 10),
-                };
-
+                return TuiDay.parseMmDdYyyy(date);
             case 'yyyy/mm/dd':
-                return {
-                    day: parseInt(date.slice(8, 10), 10),
-                    month: parseInt(date.slice(5, 7), 10) - 1,
-                    year: parseInt(date.slice(0, 4), 10),
-                };
-
+                return TuiDay.parseYyyyMmDd(date);
             case 'dd/mm/yyyy':
             default:
-                return {
-                    day: parseInt(date.slice(0, 2), 10),
-                    month: parseInt(date.slice(3, 5), 10) - 1,
-                    year: parseInt(date.slice(6, 10), 10),
-                };
+                return TuiDay.parseDdMmYyyy(date);
         }
     }
 
-    // TODO: Move month and year related code corresponding classes
-    /**
-     * Parsing a string with date with normalization
-     *
-     * @param rawDate date string
-     * @param dateMode date format of the date string (dd/mm/yyyy | mm/dd/yyyy | yyyy/mm/dd)
-     * @return normalized date
-     */
+    private static parseMmDdYyyy(date: string): {
+        day: number;
+        month: number;
+        year: number;
+    } {
+        return {
+            day: parseInt(date.slice(3, 5), 10),
+            month: parseInt(date.slice(0, 2), 10) - 1,
+            year: parseInt(date.slice(6, 10), 10),
+        };
+    }
+
+    private static parseYyyyMmDd(date: string): {
+        day: number;
+        month: number;
+        year: number;
+    } {
+        return {
+            day: parseInt(date.slice(8, 10), 10),
+            month: parseInt(date.slice(5, 7), 10) - 1,
+            year: parseInt(date.slice(0, 4), 10),
+        };
+    }
+
+    private static parseDdMmYyyy(date: string): {
+        day: number;
+        month: number;
+        year: number;
+    } {
+        return {
+            day: parseInt(date.slice(0, 2), 10),
+            month: parseInt(date.slice(3, 5), 10) - 1,
+            year: parseInt(date.slice(6, 10), 10),
+        };
+    }
+
     public static normalizeParse(
         rawDate: string,
         dateMode: TuiDateMode = 'dd/mm/yyyy',
@@ -165,28 +148,26 @@ export class TuiDay extends TuiMonth {
         return TuiDay.normalizeOf(year, month, day);
     }
 
-    /**
-     * Parsing a date stringified in a toJSON format
-     * @param ymdString date string in format of YYYY-MM-DD
-     * @return date
-     * @throws exceptions if any part of the date is invalid
-     */
     public static jsonParse(ymdString: string): TuiDay {
         const {day, month, year} = this.parseRawDateString(ymdString, 'yyyy/mm/dd');
 
-        if (
-            !TuiMonth.isValidMonth(year, month) ||
-            !Number.isInteger(day) ||
-            !tuiInRange(
-                day,
-                MIN_DAY,
-                TuiMonth.getMonthDaysCount(month, TuiYear.isLeapYear(year)) + 1,
-            )
-        ) {
+        if (!TuiDay.isValidParsedDay(day, month, year)) {
             throw new TuiInvalidDayException(year, month, day);
         }
 
         return new TuiDay(year, month, day);
+    }
+
+    private static isValidParsedDay(day: number, month: number, year: number): boolean {
+        return (
+            TuiMonth.isValidMonth(year, month) &&
+            Number.isInteger(day) &&
+            tuiInRange(
+                day,
+                MIN_DAY,
+                TuiMonth.getMonthDaysCount(month, TuiYear.isLeapYear(year)) + 1,
+            )
+        );
     }
 
     public static normalizeDayPart(day: number, month: number, year: number): number {
@@ -210,12 +191,6 @@ export class TuiDay extends TuiMonth {
         return dayOfWeek === TuiDayOfWeek.Saturday || dayOfWeek === TuiDayOfWeek.Sunday;
     }
 
-    /**
-     * Returns day of week
-     *
-     * @param startFromMonday whether week starts from Monday and not from Sunday
-     * @return day of week (from 0 to 6)
-     */
     public dayOfWeek(startFromMonday = true): number {
         const dayOfWeek = startFromMonday
             ? this.toLocalNativeDate().getDay() - 1
@@ -224,9 +199,6 @@ export class TuiDay extends TuiMonth {
         return dayOfWeek < 0 ? 6 : dayOfWeek;
     }
 
-    /**
-     * Passed date is after current
-     */
     public dayBefore(another: TuiDay): boolean {
         return (
             this.monthBefore(another) ||
@@ -234,9 +206,6 @@ export class TuiDay extends TuiMonth {
         );
     }
 
-    /**
-     * Passed date is after or equal to current
-     */
     public daySameOrBefore(another: TuiDay): boolean {
         return (
             this.monthBefore(another) ||
@@ -244,16 +213,10 @@ export class TuiDay extends TuiMonth {
         );
     }
 
-    /**
-     * Passed date is the same as current
-     */
     public daySame(another: TuiDay): boolean {
         return this.monthSame(another) && this.day === another.day;
     }
 
-    /**
-     * Passed date is either before or the same as current
-     */
     public daySameOrAfter(another: TuiDay): boolean {
         return (
             this.monthAfter(another) ||
@@ -261,9 +224,6 @@ export class TuiDay extends TuiMonth {
         );
     }
 
-    /**
-     * Passed date is before current
-     */
     public dayAfter(another: TuiDay): boolean {
         return (
             this.monthAfter(another) ||
@@ -271,13 +231,6 @@ export class TuiDay extends TuiMonth {
         );
     }
 
-    /**
-     * Clamping date between two limits
-     *
-     * @param min
-     * @param max
-     * @return clamped date
-     */
     public dayLimit(min: TuiDay | null, max: TuiDay | null): TuiDay {
         if (min !== null && this.dayBefore(min)) {
             return min;
@@ -290,70 +243,109 @@ export class TuiDay extends TuiMonth {
         return this;
     }
 
-    /**
-     * Immutably alters current day by passed offset
-     *
-     * If resulting month has more days than original one, date is rounded to the maximum day
-     * in the resulting month. Offset of days will be calculated based on the resulted year and month
-     * to not interfere with parent classes methods
-     *
-     * @param offset
-     * @return new date object as a result of offsetting current
-     */
     public override append({year = 0, month = 0, day = 0}: TuiDayLike): TuiDay {
-        const totalMonths = (this.year + year) * MONTHS_IN_YEAR + this.month + month;
-        let years = Math.floor(totalMonths / MONTHS_IN_YEAR);
-        let months = totalMonths % MONTHS_IN_YEAR;
+        const {years, months} = this.calculateInitialMonthsAndYears(year, month);
+        const days = this.calculateInitialDays(day, years, months);
+        const adjustedDaysOver = this.adjustDaysOverLimit(days, years, months);
 
+        return this.adjustDaysUnderLimit(
+            adjustedDaysOver.days,
+            adjustedDaysOver.years,
+            adjustedDaysOver.months,
+        );
+    }
+
+    private calculateInitialMonthsAndYears(
+        yearOffset: number,
+        monthOffset: number,
+    ): {years: number; months: number} {
+        const totalMonths =
+            (this.year + yearOffset) * MONTHS_IN_YEAR + this.month + monthOffset;
+        const years = Math.floor(totalMonths / MONTHS_IN_YEAR);
+        const months = totalMonths % MONTHS_IN_YEAR;
+
+        return {years, months};
+    }
+
+    private calculateInitialDays(
+        dayOffset: number,
+        targetYear: number,
+        targetMonth: number,
+    ): number {
         const monthDaysCount = TuiMonth.getMonthDaysCount(
-            months,
-            TuiYear.isLeapYear(years),
+            targetMonth,
+            TuiYear.isLeapYear(targetYear),
         );
         const currentMonthDaysCount = TuiMonth.getMonthDaysCount(
             this.month,
-            TuiYear.isLeapYear(years),
+            TuiYear.isLeapYear(targetYear),
         );
-        let days = day;
 
         if (this.day >= monthDaysCount) {
-            days += this.day - (currentMonthDaysCount - monthDaysCount);
-        } else if (
+            return dayOffset + this.day - (currentMonthDaysCount - monthDaysCount);
+        }
+
+        if (
             currentMonthDaysCount < monthDaysCount &&
             this.day === currentMonthDaysCount
         ) {
-            days += this.day + (monthDaysCount - currentMonthDaysCount);
-        } else {
-            days += this.day;
+            return dayOffset + this.day + (monthDaysCount - currentMonthDaysCount);
         }
 
-        while (days > TuiMonth.getMonthDaysCount(months, TuiYear.isLeapYear(years))) {
-            days -= TuiMonth.getMonthDaysCount(months, TuiYear.isLeapYear(years));
-
-            if (months === TuiMonthNumber.December) {
-                years++;
-                months = TuiMonthNumber.January;
-            } else {
-                months++;
-            }
-        }
-
-        while (days < MIN_DAY) {
-            if (months === TuiMonthNumber.January) {
-                years--;
-                months = TuiMonthNumber.December;
-            } else {
-                months--;
-            }
-
-            days += TuiMonth.getMonthDaysCount(months, TuiYear.isLeapYear(years));
-        }
-
-        return new TuiDay(years, months, days);
+        return dayOffset + this.day;
     }
 
-    /**
-     * Returns formatted whole date
-     */
+    private adjustDaysOverLimit(
+        days: number,
+        years: number,
+        months: number,
+    ): {days: number; years: number; months: number} {
+        let adjustedDays = days;
+        let adjustedYears = years;
+        let adjustedMonths = months;
+
+        while (
+            adjustedDays >
+            TuiMonth.getMonthDaysCount(adjustedMonths, TuiYear.isLeapYear(adjustedYears))
+        ) {
+            adjustedDays -= TuiMonth.getMonthDaysCount(
+                adjustedMonths,
+                TuiYear.isLeapYear(adjustedYears),
+            );
+
+            if (adjustedMonths === TuiMonthNumber.December) {
+                adjustedYears++;
+                adjustedMonths = TuiMonthNumber.January;
+            } else {
+                adjustedMonths++;
+            }
+        }
+
+        return {days: adjustedDays, years: adjustedYears, months: adjustedMonths};
+    }
+
+    private adjustDaysUnderLimit(days: number, years: number, months: number): TuiDay {
+        let adjustedDays = days;
+        let adjustedYears = years;
+        let adjustedMonths = months;
+
+        while (adjustedDays < MIN_DAY) {
+            if (adjustedMonths === TuiMonthNumber.January) {
+                adjustedYears--;
+                adjustedMonths = TuiMonthNumber.December;
+            } else {
+                adjustedMonths--;
+            }
+
+            adjustedDays += TuiMonth.getMonthDaysCount(
+                adjustedMonths,
+                TuiYear.isLeapYear(adjustedYears),
+            );
+        }
+
+        return new TuiDay(adjustedYears, adjustedMonths, adjustedDays);
+    }
+
     public getFormattedDay(dateFormat: TuiDateMode, separator: string): string {
         ngDevMode &&
             console.assert(
@@ -367,13 +359,40 @@ export class TuiDay extends TuiMonth {
 
         switch (dateFormat) {
             case 'mm/dd/yyyy':
-                return `${mm}${separator}${dd}${separator}${yyyy}`;
+                return this.formatMmDdYyyy(mm, dd, yyyy, separator);
             case 'yyyy/mm/dd':
-                return `${yyyy}${separator}${mm}${separator}${dd}`;
+                return this.formatYyyyMmDd(mm, dd, yyyy, separator);
             case 'dd/mm/yyyy':
             default:
-                return `${dd}${separator}${mm}${separator}${yyyy}`;
+                return this.formatDdMmYyyy(mm, dd, yyyy, separator);
         }
+    }
+
+    private formatMmDdYyyy(
+        mm: string,
+        dd: string,
+        yyyy: string,
+        separator: string,
+    ): string {
+        return `${mm}${separator}${dd}${separator}${yyyy}`;
+    }
+
+    private formatYyyyMmDd(
+        mm: string,
+        dd: string,
+        yyyy: string,
+        separator: string,
+    ): string {
+        return `${yyyy}${separator}${mm}${separator}${dd}`;
+    }
+
+    private formatDdMmYyyy(
+        mm: string,
+        dd: string,
+        yyyy: string,
+        separator: string,
+    ): string {
+        return `${dd}${separator}${mm}${separator}${yyyy}`;
     }
 
     public override toString(
@@ -387,9 +406,6 @@ export class TuiDay extends TuiMonth {
         return `${super.toJSON()}-${this.formattedDayPart}`;
     }
 
-    /**
-     * Returns native {@link Date} based on local time zone
-     */
     public override toLocalNativeDate(): Date {
         const date = super.toLocalNativeDate();
 
@@ -398,9 +414,6 @@ export class TuiDay extends TuiMonth {
         return date;
     }
 
-    /**
-     * Returns native {@link Date} based on UTC
-     */
     public override toUtcNativeDate(): Date {
         return new Date(Date.UTC(this.year, this.month, this.day));
     }

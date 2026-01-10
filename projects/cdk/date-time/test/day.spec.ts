@@ -685,303 +685,302 @@ describe('TuiDay', () => {
             });
 
             describe('append returns', () => {
-                it('TuiDay {year: 2000, month: 6, day: 15} if {} was passed', () => {
-                    const result = y2000m6d15.append({});
+                describe('unchanged date when zero values are passed', () => {
+                    it('if {} was passed', () => {
+                        const result = y2000m6d15.append({});
 
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 6, day: 15} if {year: 0} was passed', () => {
-                    const result = y2000m6d15.append({year: 0});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 6, day: 15} if {year: 0, month: 0} was passed', () => {
-                    const result = y2000m6d15.append({year: 0, month: 0});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 6, day: 15} if {year: 0, month: 0, day: 0} was passed', () => {
-                    const result = y2000m6d15.append({
-                        year: 0,
-                        month: 0,
-                        day: 0,
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
                     });
 
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
+                    it('if {year: 0} was passed', () => {
+                        const result = y2000m6d15.append({year: 0});
 
-                it('TuiDay {year: 2005, month: 6, day: 15} if {year: 5} was passed', () => {
-                    const result = y2000m6d15.append({year: 5});
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
+                    });
 
-                    expect(result.year).toBe(2005);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
+                    it('if {year: 0, month: 0} was passed', () => {
+                        const result = y2000m6d15.append({year: 0, month: 0});
 
-                it('TuiDay {year: 1995, month: 6, day: 15} if {year: -5} was passed', () => {
-                    const result = y2000m6d15.append({year: -5});
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
+                    });
 
-                    expect(result.year).toBe(1995);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 11, day: 15} if {month: 5} was passed', () => {
-                    const result = y2000m6d15.append({month: 5});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(11);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 1, day: 15} if {month: -5} was passed', () => {
-                    const result = y2000m6d15.append({month: -5});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(1);
-                    expect(result.day).toBe(15);
-                });
-
-                it('TuiDay {year: 2000, month: 6, day: 20} if {day: 5} was passed', () => {
-                    const result = y2000m6d15.append({day: 5});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(20);
-                });
-
-                it('TuiDay {year: 2000, month: 6, day: 10} if {day: -5} was passed', () => {
-                    const result = y2000m6d15.append({day: -5});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                    expect(result.day).toBe(10);
-                });
-
-                it('TuiDay {year: 2000, month: 7, day: 1} if {day: 17} was passed', () => {
-                    const result = y2000m6d15.append({day: 17});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(7);
-                    expect(result.day).toBe(1);
-                });
-
-                it('TuiDay {year: 2000, month: 11, day: 31} if {day: 169} was passed', () => {
-                    const result = y2000m6d15.append({day: 169});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(11);
-                    expect(result.day).toBe(31);
-                });
-
-                it('TuiDay {year: 2001, month: 0, day: 1} if {day: 170} was passed', () => {
-                    const result = y2000m6d15.append({day: 170});
-
-                    expect(result.year).toBe(2001);
-                    expect(result.month).toBe(0);
-                    expect(result.day).toBe(1);
-                });
-
-                it('TuiDay {year: 1999, month: 11, day: 31} if {day: -197} was passed', () => {
-                    const result = y2000m6d15.append({day: -197});
-
-                    expect(result.year).toBe(1999);
-                    expect(result.month).toBe(11);
-                    expect(result.day).toBe(31);
-                });
-
-                it('TuiDay {year: 2000, month: 5, day: 30} if {day: -15} was passed', () => {
-                    const result = y2000m6d15.append({day: -15});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(5);
-                    expect(result.day).toBe(30);
-                });
-
-                it('TuiDay {year: 2000, month: 2, day: 29} if {month: -4, day: 14} was passed', () => {
-                    const result = y2000m6d15.append({month: -4, day: 14});
-
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(2);
-                    expect(result.day).toBe(29);
-                });
-
-                it('TuiDay {year: 1999, month: 11, day: 31} if {month: -6, day: -15} was passed', () => {
-                    const result = y2000m6d15.append({month: -6, day: -15});
-
-                    expect(result.year).toBe(1999);
-                    expect(result.month).toBe(11);
-                    expect(result.day).toBe(31);
-                });
-
-                it('TuiDay {year: 1998, month: 11, day: 31} if {month: -6, day: -15, year: -1} was passed', () => {
-                    const result = y2000m6d15.append({month: -6, day: -15, year: -1});
-
-                    expect(result.year).toBe(1998);
-                    expect(result.month).toBe(11);
-                    expect(result.day).toBe(31);
-                });
-
-                it('TuiDay {year: 2018, month: 1, day: 28} if {month: 1}', () => {
-                    const result = new TuiDay(2018, 0, 31).append({month: 1});
-
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(1);
-                    expect(result.day).toBe(28);
-                });
-
-                it('TuiDay {year: 2025, month: 1, day: 1} if {month: 1}', () => {
-                    const result = new TuiDay(2025, 0, 1).append({month: 1});
-
-                    expect(result.year).toBe(2025);
-                    expect(result.month).toBe(1);
-                    expect(result.day).toBe(1);
-                });
-
-                it(
-                    'TuiDay {year: 2025, month: 7, day: 31} if {month: -1} was passed (for the last day of month,' +
-                        'when the current month has less days than the final month)',
-                    () => {
-                        const result = new TuiDay(2025, 8, 30).append({
-                            month: -1,
+                    it('if {year: 0, month: 0, day: 0} was passed', () => {
+                        const result = y2000m6d15.append({
+                            year: 0,
+                            month: 0,
+                            day: 0,
                         });
 
-                        expect(result.year).toBe(2025);
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
+                    });
+                });
+
+                describe('year adjustments', () => {
+                    it('adds years when positive value is passed', () => {
+                        const result = y2000m6d15.append({year: 5});
+
+                        expect(result.year).toBe(2005);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
+                    });
+
+                    it('subtracts years when negative value is passed', () => {
+                        const result = y2000m6d15.append({year: -5});
+
+                        expect(result.year).toBe(1995);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(15);
+                    });
+                });
+
+                describe('month adjustments', () => {
+                    it('adds months when positive value is passed', () => {
+                        const result = y2000m6d15.append({month: 5});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(11);
+                        expect(result.day).toBe(15);
+                    });
+
+                    it('subtracts months when negative value is passed', () => {
+                        const result = y2000m6d15.append({month: -5});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(1);
+                        expect(result.day).toBe(15);
+                    });
+                });
+
+                describe('day adjustments', () => {
+                    it('adds days within the same month', () => {
+                        const result = y2000m6d15.append({day: 5});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(20);
+                    });
+
+                    it('subtracts days within the same month', () => {
+                        const result = y2000m6d15.append({day: -5});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                        expect(result.day).toBe(10);
+                    });
+
+                    it('adds days and moves to next month', () => {
+                        const result = y2000m6d15.append({day: 17});
+
+                        expect(result.year).toBe(2000);
                         expect(result.month).toBe(7);
-                        expect(result.day).toBe(31);
-                    },
-                );
-
-                it('TuiDay {year: 2025, month: 9, day: 1} if {month: 1} was passed', () => {
-                    const result = new TuiDay(2025, 8, 1).append({
-                        month: 1,
+                        expect(result.day).toBe(1);
                     });
 
-                    expect(result.year).toBe(2025);
-                    expect(result.month).toBe(9);
-                    expect(result.day).toBe(1);
+                    it('adds many days and moves to later months', () => {
+                        const result = y2000m6d15.append({day: 169});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(11);
+                        expect(result.day).toBe(31);
+                    });
+
+                    it('adds many days and moves to next year', () => {
+                        const result = y2000m6d15.append({day: 170});
+
+                        expect(result.year).toBe(2001);
+                        expect(result.month).toBe(0);
+                        expect(result.day).toBe(1);
+                    });
+
+                    it('subtracts many days and moves to previous year', () => {
+                        const result = y2000m6d15.append({day: -197});
+
+                        expect(result.year).toBe(1999);
+                        expect(result.month).toBe(11);
+                        expect(result.day).toBe(31);
+                    });
+
+                    it('subtracts days and moves to previous month', () => {
+                        const result = y2000m6d15.append({day: -15});
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(5);
+                        expect(result.day).toBe(30);
+                    });
                 });
 
-                it(
-                    'TuiDay {year: 2018, month: 1, day: 28} if {month: -1} was passed (for the last day of month,' +
-                        ' when the current month has more days than the final month)',
-                    () => {
-                        const result = new TuiDay(2018, 2, 31).append({month: -1});
+                describe('combined adjustments', () => {
+                    it('adjusts month and day together', () => {
+                        const result = y2000m6d15.append({month: -4, day: 14});
 
-                        expect(result.year).toBe(2018);
-                        expect(result.month).toBe(1);
-                        expect(result.day).toBe(28);
-                    },
-                );
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(2);
+                        expect(result.day).toBe(29);
+                    });
 
-                it('TuiDay {year: 2018, month: 2, day: 31} if {month: 1} was passed', () => {
-                    const result = new TuiDay(2018, 1, 28).append({month: 1});
+                    it('adjusts month and day with negative values', () => {
+                        const result = y2000m6d15.append({month: -6, day: -15});
 
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(2);
-                    expect(result.day).toBe(31);
+                        expect(result.year).toBe(1999);
+                        expect(result.month).toBe(11);
+                        expect(result.day).toBe(31);
+                    });
+
+                    it('adjusts year, month and day together', () => {
+                        const result = y2000m6d15.append({month: -6, day: -15, year: -1});
+
+                        expect(result.year).toBe(1998);
+                        expect(result.month).toBe(11);
+                        expect(result.day).toBe(31);
+                    });
                 });
 
-                it(
-                    'TuiDay {year: 2018, month: 1, day: 26} if {month: -1} was passed (when the current month has' +
-                        ' more days than the final month, and the final month don`t has the day)',
-                    () => {
-                        const result = new TuiDay(2018, 2, 29).append({month: -1});
+                describe('month transitions with day adjustments', () => {
+                    describe('when current month has more days', () => {
+                        it('adjusts to last day of target month when moving forward', () => {
+                            const result = new TuiDay(2018, 0, 31).append({month: 1});
 
-                        expect(result.year).toBe(2018);
-                        expect(result.month).toBe(1);
-                        expect(result.day).toBe(26);
-                    },
-                );
-
-                it('TuiDay {year: 2018, month: 1, day: 26} if {month: -1} was passed', () => {
-                    const result = new TuiDay(2018, 2, 26).append({month: -1});
-
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(1);
-                    expect(result.day).toBe(26);
-                });
-
-                it('TuiDay {year: 2018, month: 2, day: 26} if {month: 1} was passed', () => {
-                    const result = new TuiDay(2018, 1, 26).append({month: 1});
-
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(2);
-                    expect(result.day).toBe(26);
-                });
-
-                it(
-                    'TuiDay {year: 2018, month: 1, day: 25} if {month: -1} was passed (when the current month has' +
-                        ' more days than the final month, but both have the day, and it`s the last day of the final' +
-                        ' month)',
-                    () => {
-                        const result = new TuiDay(2018, 2, 28).append({
-                            month: -1,
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(28);
                         });
 
-                        expect(result.year).toBe(2018);
-                        expect(result.month).toBe(1);
-                        expect(result.day).toBe(25);
-                    },
-                );
+                        it('preserves day when target month has enough days', () => {
+                            const result = new TuiDay(2025, 0, 1).append({month: 1});
 
-                it('TuiDay {year: 2018, month: 1, day: 25} if {month: -1} was passed', () => {
-                    const result = new TuiDay(2018, 2, 25).append({month: -1});
+                            expect(result.year).toBe(2025);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(1);
+                        });
 
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(1);
-                    expect(result.day).toBe(25);
+                        it('adjusts to last day of target month when moving backward', () => {
+                            const result = new TuiDay(2018, 2, 31).append({month: -1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(28);
+                        });
+
+                        it('preserves day when moving from shorter month to longer', () => {
+                            const result = new TuiDay(2018, 1, 28).append({month: 1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(2);
+                            expect(result.day).toBe(31);
+                        });
+                    });
+
+                    describe('when current month has fewer days', () => {
+                        it('adjusts to last day of target month when moving backward', () => {
+                            const result = new TuiDay(2025, 8, 30).append({
+                                month: -1,
+                            });
+
+                            expect(result.year).toBe(2025);
+                            expect(result.month).toBe(7);
+                            expect(result.day).toBe(31);
+                        });
+
+                        it('preserves day when moving forward', () => {
+                            const result = new TuiDay(2025, 8, 1).append({
+                                month: 1,
+                            });
+
+                            expect(result.year).toBe(2025);
+                            expect(result.month).toBe(9);
+                            expect(result.day).toBe(1);
+                        });
+                    });
                 });
 
-                it('TuiDay {year: 2018, month: 2, day: 25} if {month: 1} was passed', () => {
-                    const result = new TuiDay(2018, 1, 25).append({month: 1});
+                describe('edge cases for month transitions', () => {
+                    describe('when target month does not have the day', () => {
+                        it('adjusts day when moving from March 29 to February (non-leap year)', () => {
+                            const result = new TuiDay(2018, 2, 29).append({month: -1});
 
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(2);
-                    expect(result.day).toBe(25);
-                });
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(26);
+                        });
 
-                it(
-                    'TuiDay {year: 2018, month: 1, day: 27}, if {month: -1} was passed (when the current month has more' +
-                        ' days than the final month, but both has the day)',
-                    () => {
-                        const result = new TuiDay(2018, 2, 27).append({month: -1});
+                        it('adjusts day when moving from March 26 to February', () => {
+                            const result = new TuiDay(2018, 2, 26).append({month: -1});
 
-                        expect(result.year).toBe(2018);
-                        expect(result.month).toBe(1);
-                        expect(result.day).toBe(27);
-                    },
-                );
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(26);
+                        });
 
-                it(
-                    'TuiDay {year: 2018, month: 1, day: 27} if {month: -1} was passed (when the current month has more' +
-                        ' days than the final month, and the final month don`t has the day)',
-                    () => {
-                        const result = new TuiDay(2018, 2, 30).append({month: -1});
+                        it('preserves day when moving from February to March', () => {
+                            const result = new TuiDay(2018, 1, 26).append({month: 1});
 
-                        expect(result.year).toBe(2018);
-                        expect(result.month).toBe(1);
-                        expect(result.day).toBe(27);
-                    },
-                );
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(2);
+                            expect(result.day).toBe(26);
+                        });
+                    });
 
-                it('TuiDay {year: 2018, month: 3, day: 1} if {month: 1} was passed', () => {
-                    const result = new TuiDay(2018, 2, 1).append({month: 1});
+                    describe('last day of month scenarios', () => {
+                        it('adjusts when moving from last day of longer month', () => {
+                            const result = new TuiDay(2018, 2, 28).append({
+                                month: -1,
+                            });
 
-                    expect(result.year).toBe(2018);
-                    expect(result.month).toBe(3);
-                    expect(result.day).toBe(1);
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(25);
+                        });
+
+                        it('adjusts when moving from day 25 of March to February', () => {
+                            const result = new TuiDay(2018, 2, 25).append({month: -1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(25);
+                        });
+
+                        it('preserves day when moving from February to March', () => {
+                            const result = new TuiDay(2018, 1, 25).append({month: 1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(2);
+                            expect(result.day).toBe(25);
+                        });
+                    });
+
+                    describe('common day scenarios', () => {
+                        it('preserves day when both months have the day', () => {
+                            const result = new TuiDay(2018, 2, 27).append({month: -1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(27);
+                        });
+
+                        it('adjusts when target month lacks the day', () => {
+                            const result = new TuiDay(2018, 2, 30).append({month: -1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(1);
+                            expect(result.day).toBe(27);
+                        });
+
+                        it('preserves first day of month', () => {
+                            const result = new TuiDay(2018, 2, 1).append({month: 1});
+
+                            expect(result.year).toBe(2018);
+                            expect(result.month).toBe(3);
+                            expect(result.day).toBe(1);
+                        });
+                    });
                 });
             });
 

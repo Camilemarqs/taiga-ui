@@ -202,11 +202,16 @@ describe('TuiDayRange', () => {
     });
 
     describe('dayLimit', () => {
-        it('limits from one side if the other is null', () => {
-            const y2000m0d1 = new TuiDay(2000, 0, 1);
-            const y2001m0d1 = new TuiDay(2001, 0, 1);
-            const y3000m0d1 = new TuiDay(3000, 0, 1);
+        let y2000m0d1: TuiDay;
+        let y3000m0d1: TuiDay;
 
+        beforeEach(() => {
+            y2000m0d1 = new TuiDay(2000, 0, 1);
+            y3000m0d1 = new TuiDay(3000, 0, 1);
+        });
+
+        it('limits from one side if the other is null', () => {
+            const y2001m0d1 = new TuiDay(2001, 0, 1);
             const range = new TuiDayRange(y2000m0d1, y3000m0d1);
             const limitedRange = range.dayLimit(y2001m0d1, null);
 
@@ -214,10 +219,7 @@ describe('TuiDayRange', () => {
         });
 
         it('limits from second side correctly', () => {
-            const y2000m0d1 = new TuiDay(2000, 0, 1);
             const y2999m0d1 = new TuiDay(2999, 0, 1);
-            const y3000m0d1 = new TuiDay(3000, 0, 1);
-
             const range = new TuiDayRange(y2000m0d1, y3000m0d1);
             const limitedRange = range.dayLimit(null, y2999m0d1);
 
@@ -226,31 +228,24 @@ describe('TuiDayRange', () => {
     });
 
     describe('getFormattedDayRange returns', () => {
+        const range = new TuiDayRange(new TuiDay(2000, 11, 20), new TuiDay(3000, 9, 18));
+
         it('formatted string (DMY)', () => {
-            expect(
-                new TuiDayRange(
-                    new TuiDay(2000, 11, 20),
-                    new TuiDay(3000, 9, 18),
-                ).getFormattedDayRange('dd/mm/yyyy', '.'),
-            ).toBe(`20.12.2000${RANGE_SEPARATOR_CHAR}18.10.3000`);
+            expect(range.getFormattedDayRange('dd/mm/yyyy', '.')).toBe(
+                `20.12.2000${RANGE_SEPARATOR_CHAR}18.10.3000`,
+            );
         });
 
         it('formatted string (MDY)', () => {
-            expect(
-                new TuiDayRange(
-                    new TuiDay(2000, 11, 20),
-                    new TuiDay(3000, 9, 18),
-                ).getFormattedDayRange('mm/dd/yyyy', '/'),
-            ).toBe(`12/20/2000${RANGE_SEPARATOR_CHAR}10/18/3000`);
+            expect(range.getFormattedDayRange('mm/dd/yyyy', '/')).toBe(
+                `12/20/2000${RANGE_SEPARATOR_CHAR}10/18/3000`,
+            );
         });
 
         it('formatted string (YMD)', () => {
-            expect(
-                new TuiDayRange(
-                    new TuiDay(2000, 11, 20),
-                    new TuiDay(3000, 9, 18),
-                ).getFormattedDayRange('yyyy/mm/dd', '-'),
-            ).toBe(`2000-12-20${RANGE_SEPARATOR_CHAR}3000-10-18`);
+            expect(range.getFormattedDayRange('yyyy/mm/dd', '-')).toBe(
+                `2000-12-20${RANGE_SEPARATOR_CHAR}3000-10-18`,
+            );
         });
     });
 });
