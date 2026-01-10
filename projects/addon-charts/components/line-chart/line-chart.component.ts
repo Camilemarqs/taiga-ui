@@ -22,6 +22,12 @@ import {filter, map} from 'rxjs';
 
 import {TUI_LINE_CHART_OPTIONS} from './line-chart.options';
 import {TuiLineChartHint} from './line-chart-hint.directive';
+import {
+    type TuiChartDataConfig,
+    type TuiChartDimensionsConfig,
+    type TuiChartFormattingConfig,
+    type TuiChartStylingConfig,
+} from './line-chart-config.interface';
 
 @Component({
     selector: 'tui-line-chart',
@@ -36,6 +42,9 @@ import {TuiLineChartHint} from './line-chart-hint.directive';
     },
 })
 export class TuiLineChart {
+    // ============================================================================
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
+    // ============================================================================
     private readonly options = inject(TUI_LINE_CHART_OPTIONS);
     private readonly autoId = tuiGenerateId();
     private readonly resize = toSignal(
@@ -45,64 +54,116 @@ export class TuiLineChart {
         ),
         {initialValue: NaN},
     );
-
-    private readonly box = computed(
-        () => `${this.x()} ${this.y()} ${this.width()} ${this.height()}`,
-    );
-
     protected readonly hintDirective = inject(TuiLineChartHint, {optional: true});
     protected readonly hintOptions = inject(TuiChartHint, {optional: true});
+
+    // ============================================================================
+    // INPUTS - Agrupados por responsabilidade
+    // ============================================================================
+
+    // Dimensões e posicionamento
+    public readonly x = input(0);
+    public readonly y = input(0);
+    public readonly width = input(0);
+    public readonly height = input(0);
+
+    // Estilo e aparência
+    public readonly smoothingFactor = input(this.options.smoothingFactor);
+    public readonly filled = input(this.options.filled);
+    public readonly dots = input(this.options.dots);
+
+    // Formatação de valores (hints)
+    public xStringify = input<TuiStringHandler<number> | null>(null);
+    public yStringify = input<TuiStringHandler<number> | null>(null);
+
+    // Dados do gráfico
+    public value = input<readonly TuiPoint[], readonly TuiPoint[]>([], {
+        transform: (value) => value.filter((item) => !item.some(Number.isNaN)),
+    });
+
+    // ============================================================================
+    // ESTADO E INTERAÇÃO
+    // ============================================================================
+    public readonly hovered = signal<number>(NaN);
+    public readonly drivers = viewChildren(TuiHintHover);
+    public readonly drivers$ = toObservable(this.drivers);
+
+    // ============================================================================
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
+    // ============================================================================
+
+    /** Configuração de dimensões agrupada */
+    private readonly dimensionsConfig = computed<TuiChartDimensionsConfig>(() => ({
+        x: this.x(),
+        y: this.y(),
+        width: this.width(),
+        height: this.height(),
+    }));
+
+    /** Configuração de estilo agrupada */
+    private readonly stylingConfig = computed<TuiChartStylingConfig>(() => ({
+        smoothingFactor: this.smoothingFactor(),
+        filled: this.filled(),
+        dots: this.dots(),
+    }));
+
+    /** Configuração de formatação agrupada */
+    private readonly formattingConfig = computed<TuiChartFormattingConfig>(() => ({
+        xStringify: this.xStringify(),
+        yStringify: this.yStringify(),
+    }));
+
+    /** Configuração de dados agrupada */
+    private readonly dataConfig = computed<TuiChartDataConfig>(() => ({
+        value: this.value(),
+    }));
+
+    // ============================================================================
+    // COMPUTED VALUES - SVG e cálculos de renderização
+    // ============================================================================
+
+    private readonly box = computed(
+        () =>
+            `${this.dimensionsConfig().x} ${this.dimensionsConfig().y} ${this.dimensionsConfig().width} ${this.dimensionsConfig().height}`,
+    );
+
     protected readonly viewBox = computed(() => {
         if (Number.isNaN(this.resize())) {
             return '0 0 0 0';
         }
 
-        const offset = this.height() / Math.max(this.resize(), 1);
-        const [x = 0, y = 0, width = 0, height = 0] = this.box().split(' ').map(Number);
+        const {height} = this.dimensionsConfig();
+        const offset = height / Math.max(this.resize(), 1);
+        const [x = 0, y = 0, width = 0, heightValue = 0] = this.box()
+            .split(' ')
+            .map(Number);
 
-        return `${x} ${y - offset} ${width} ${height + 2 * offset}`;
+        return `${x} ${y - offset} ${width} ${heightValue + 2 * offset}`;
     });
 
-    protected readonly d = computed(() =>
-        this.value().reduce(
+    protected readonly d = computed(() => {
+        const {value} = this.dataConfig();
+        const {smoothingFactor} = this.stylingConfig();
+
+        return value.reduce(
             (d, point, index) =>
-                index
-                    ? `${d} ${tuiDraw(this.value(), index, this.smoothingFactor())}`
-                    : `M ${point}`,
+                index ? `${d} ${tuiDraw(value, index, smoothingFactor)}` : `M ${point}`,
             '',
-        ),
-    );
-
-    protected readonly fillD = computed(() =>
-        this.value().length
-            ? `${this.d()}V ${this.y()} H ${this.value()[0]?.[0]} V ${this.value()[0]?.[1]}`
-            : this.d(),
-    );
-
-    public readonly drivers = viewChildren(TuiHintHover);
-    public readonly drivers$ = toObservable(this.drivers);
-
-    public readonly x = input(0);
-    public readonly y = input(0);
-    public readonly width = input(0);
-    public readonly height = input(0);
-    public readonly smoothingFactor = input(this.options.smoothingFactor);
-
-    public xStringify = input<TuiStringHandler<number> | null>(null);
-    public yStringify = input<TuiStringHandler<number> | null>(null);
-
-    public readonly filled = input(this.options.filled);
-    public readonly dots = input(this.options.dots);
-
-    public value = input<readonly TuiPoint[], readonly TuiPoint[]>([], {
-        transform: (value) => value.filter((item) => !item.some(Number.isNaN)),
+        );
     });
 
-    public readonly hovered = signal<number>(NaN);
+    protected readonly fillD = computed(() => {
+        const {value} = this.dataConfig();
+        const {y} = this.dimensionsConfig();
 
-    public onHovered(index: number): void {
-        this.hovered.set(index);
-    }
+        return value.length
+            ? `${this.d()}V ${y} H ${value[0]?.[0]} V ${value[0]?.[1]}`
+            : this.d();
+    });
+
+    // ============================================================================
+    // GETTERS E PROPRIEDADES COMPUTED - Acessórios e helpers
+    // ============================================================================
 
     protected get hintContent(): PolymorpheusContent<TuiLineChartHintContext<TuiPoint>> {
         return this.hintOptions?.content() || '';
@@ -113,72 +174,39 @@ export class TuiLineChart {
     }
 
     protected get fill(): string {
-        return this.filled() ? `url(#${this.fillId})` : 'none';
+        return this.stylingConfig().filled ? `url(#${this.fillId})` : 'none';
+    }
+
+    protected get hasHints(): boolean {
+        const {xStringify, yStringify} = this.formattingConfig();
+        return (
+            !!xStringify ||
+            !!yStringify ||
+            !!this.hintDirective?.hint() ||
+            !!this.hintContent
+        );
     }
 
     protected get isFocusable(): boolean {
         return !this.hintDirective && this.hasHints;
     }
 
-    protected get hasHints(): boolean {
-        return (
-            !!this.xStringify() ||
-            !!this.yStringify() ||
-            !!this.hintDirective?.hint() ||
-            !!this.hintContent
-        );
+    private get isSinglePoint(): boolean {
+        return this.dataConfig().value.length === 1;
+    }
+
+    // ============================================================================
+    // MÉTODOS DE INTERAÇÃO - Hover e eventos do mouse
+    // ============================================================================
+
+    public onHovered(index: number): void {
+        this.hovered.set(index);
     }
 
     protected onMouseLeave(): void {
         if (!this.hintDirective) {
             this.onHovered(NaN);
         }
-    }
-
-    protected getX(index: number): number {
-        if (this.isSinglePoint) {
-            return (this.value()[0]?.[0] || 0) / 2;
-        }
-
-        return index
-            ? ((this.value()[index - 1]?.[0] || 0) + (this.value()[index]?.[0] || 0)) / 2
-            : 2 * (this.value()[0]?.[0] || 0) - this.getX(1);
-    }
-
-    protected getWidth(index: number): number {
-        return (100 * this.computeWidth(index)) / this.width();
-    }
-
-    protected getHintId(index: number): string {
-        return `${this.autoId}_${index}`;
-    }
-
-    protected getImplicit($implicit: TuiPoint): TuiPoint | readonly TuiPoint[] {
-        return (
-            this.hintDirective?.getContext(this.value().indexOf($implicit), this) ??
-            $implicit
-        );
-    }
-
-    protected getHovered(hovered: number | null): TuiPoint | null {
-        // This checks for NaN and null too since async pipe returns null before first item
-        return tuiIsPresent(hovered) && Number.isInteger(hovered)
-            ? (this.value()[hovered] ?? null)
-            : null;
-    }
-
-    protected getBottom(y: number): number {
-        return (100 * (y - this.y())) / this.height();
-    }
-
-    protected getLeft(x: number): number {
-        return (100 * (x - this.x())) / this.width();
-    }
-
-    protected getOffset(x: number): number {
-        return (
-            (100 * ((this.value()[x]?.[0] || 0) - this.getX(x))) / this.computeWidth(x)
-        );
     }
 
     protected onMouseEnter(index: number): void {
@@ -189,13 +217,70 @@ export class TuiLineChart {
         }
     }
 
-    private get isSinglePoint(): boolean {
-        return this.value().length === 1;
+    // ============================================================================
+    // MÉTODOS DE CÁLCULO GEOMÉTRICO - Posicionamento e dimensões
+    // ============================================================================
+
+    protected getX(index: number): number {
+        const {value} = this.dataConfig();
+
+        if (this.isSinglePoint) {
+            return (value[0]?.[0] || 0) / 2;
+        }
+
+        return index
+            ? ((value[index - 1]?.[0] || 0) + (value[index]?.[0] || 0)) / 2
+            : 2 * (value[0]?.[0] || 0) - this.getX(1);
+    }
+
+    protected getWidth(index: number): number {
+        const {width} = this.dimensionsConfig();
+        return (100 * this.computeWidth(index)) / width;
+    }
+
+    protected getBottom(y: number): number {
+        const {y: yOrigin, height} = this.dimensionsConfig();
+        return (100 * (y - yOrigin)) / height;
+    }
+
+    protected getLeft(x: number): number {
+        const {x: xOrigin, width} = this.dimensionsConfig();
+        return (100 * (x - xOrigin)) / width;
+    }
+
+    protected getOffset(x: number): number {
+        const {value} = this.dataConfig();
+        return (100 * ((value[x]?.[0] || 0) - this.getX(x))) / this.computeWidth(x);
     }
 
     private computeWidth(index: number): number {
-        return index === this.value().length - 1
-            ? 2 * ((this.value()[index]?.[0] || 0) - this.getX(index))
+        const {value} = this.dataConfig();
+
+        return index === value.length - 1
+            ? 2 * ((value[index]?.[0] || 0) - this.getX(index))
             : this.getX(index + 1) - this.getX(index);
+    }
+
+    // ============================================================================
+    // MÉTODOS DE HINTS - Formatação e contexto
+    // ============================================================================
+
+    protected getHintId(index: number): string {
+        return `${this.autoId}_${index}`;
+    }
+
+    protected getImplicit($implicit: TuiPoint): TuiPoint | readonly TuiPoint[] {
+        const {value} = this.dataConfig();
+        return (
+            this.hintDirective?.getContext(value.indexOf($implicit), this) ?? $implicit
+        );
+    }
+
+    protected getHovered(hovered: number | null): TuiPoint | null {
+        // This checks for NaN and null too since async pipe returns null before first item
+        const {value} = this.dataConfig();
+        return tuiIsPresent(hovered) && Number.isInteger(hovered)
+            ? (value[hovered] ?? null)
+            : null;
     }
 }
