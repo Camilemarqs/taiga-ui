@@ -1,7 +1,9 @@
 import {TuiYear} from '@taiga-ui/cdk';
 
 describe('TuiYear', () => {
+    // Testes para métodos estáticos da classe TuiYear
     describe('static method', () => {
+        // Validação de ano válido/inválido
         describe('isValidYear returns', () => {
             describe('false if passed year is invalid', () => {
                 it('NaN', () => {
@@ -44,144 +46,80 @@ describe('TuiYear', () => {
             });
         });
 
+        // Verifica se um ano é bissexto
         describe('isLeapYear returns', () => {
+            // Anos que não são bissextos
             describe('false if passed year is not a leap year', () => {
-                it('1', () => {
-                    expect(TuiYear.isLeapYear(1)).toBe(false);
-                });
+                const nonLeapYears = [1, 2, 3, 5, 2001, 2018, 2100, 1995, 1334, 3421];
 
-                it('2', () => {
-                    expect(TuiYear.isLeapYear(2)).toBe(false);
-                });
-
-                it('3', () => {
-                    expect(TuiYear.isLeapYear(3)).toBe(false);
-                });
-
-                it('5', () => {
-                    expect(TuiYear.isLeapYear(5)).toBe(false);
-                });
-
-                it('2001', () => {
-                    expect(TuiYear.isLeapYear(2001)).toBe(false);
-                });
-
-                it('2018', () => {
-                    expect(TuiYear.isLeapYear(2018)).toBe(false);
-                });
-
-                it('2100', () => {
-                    expect(TuiYear.isLeapYear(2100)).toBe(false);
-                });
-
-                it('1995', () => {
-                    expect(TuiYear.isLeapYear(1995)).toBe(false);
-                });
-
-                it('1334', () => {
-                    expect(TuiYear.isLeapYear(1334)).toBe(false);
-                });
-
-                it('3421', () => {
-                    expect(TuiYear.isLeapYear(3421)).toBe(false);
+                nonLeapYears.forEach((year) => {
+                    it(`${year}`, () => {
+                        expect(TuiYear.isLeapYear(year)).toBe(false);
+                    });
                 });
             });
 
+            // Anos que são bissextos
             describe('true if passed year is a leap year', () => {
-                it('0', () => {
-                    expect(TuiYear.isLeapYear(0)).toBe(true);
-                });
+                const leapYears = [0, 4, 20, 1200, 2000, 2020, 2104];
 
-                it('4', () => {
-                    expect(TuiYear.isLeapYear(4)).toBe(true);
-                });
-
-                it('20', () => {
-                    expect(TuiYear.isLeapYear(20)).toBe(true);
-                });
-
-                it('1200', () => {
-                    expect(TuiYear.isLeapYear(1200)).toBe(true);
-                });
-
-                it('2000', () => {
-                    expect(TuiYear.isLeapYear(2000)).toBe(true);
-                });
-
-                it('2020', () => {
-                    expect(TuiYear.isLeapYear(2020)).toBe(true);
-                });
-
-                it('2104', () => {
-                    expect(TuiYear.isLeapYear(2104)).toBe(true);
+                leapYears.forEach((year) => {
+                    it(`${year}`, () => {
+                        expect(TuiYear.isLeapYear(year)).toBe(true);
+                    });
                 });
             });
         });
 
+        // Retorna o número absoluto de anos bissextos até o ano especificado
         describe('getAbsoluteLeapYears returns', () => {
-            it('0 if passed value was 0', () => {
-                expect(TuiYear.getAbsoluteLeapYears(0)).toBe(0);
+            // Casos básicos (0-10)
+            describe('basic cases (0-10)', () => {
+                const testCases = [
+                    [0, 0],
+                    [1, 1],
+                    [2, 1],
+                    [3, 1],
+                    [4, 1],
+                    [5, 2],
+                    [6, 2],
+                    [7, 2],
+                    [8, 2],
+                    [9, 3],
+                    [10, 3],
+                ] as const;
+
+                testCases.forEach(([year, expected]) => {
+                    it(`${expected} if passed value was ${year}`, () => {
+                        expect(TuiYear.getAbsoluteLeapYears(year)).toBe(expected);
+                    });
+                });
             });
 
-            it('1 if passed value was 1', () => {
-                expect(TuiYear.getAbsoluteLeapYears(1)).toBe(1);
-            });
+            // Casos com valores grandes
+            describe('large values', () => {
+                it('485 if passed value was 2000', () => {
+                    expect(TuiYear.getAbsoluteLeapYears(2000)).toBe(485);
+                });
 
-            it('1 if passed value was 2', () => {
-                expect(TuiYear.getAbsoluteLeapYears(2)).toBe(1);
-            });
-
-            it('1 if passed value was 3', () => {
-                expect(TuiYear.getAbsoluteLeapYears(3)).toBe(1);
-            });
-
-            it('1 if passed value was 4', () => {
-                expect(TuiYear.getAbsoluteLeapYears(4)).toBe(1);
-            });
-
-            it('2 if passed value was 5', () => {
-                expect(TuiYear.getAbsoluteLeapYears(5)).toBe(2);
-            });
-
-            it('2 if passed value was 6', () => {
-                expect(TuiYear.getAbsoluteLeapYears(6)).toBe(2);
-            });
-
-            it('2 if passed value was 7', () => {
-                expect(TuiYear.getAbsoluteLeapYears(7)).toBe(2);
-            });
-
-            it('2 if passed value was 8', () => {
-                expect(TuiYear.getAbsoluteLeapYears(8)).toBe(2);
-            });
-
-            it('3 if passed value was 9', () => {
-                expect(TuiYear.getAbsoluteLeapYears(9)).toBe(3);
-            });
-
-            it('3 if passed value was 10', () => {
-                expect(TuiYear.getAbsoluteLeapYears(10)).toBe(3);
-            });
-
-            it('485 if passed value was 2000', () => {
-                expect(TuiYear.getAbsoluteLeapYears(2000)).toBe(485);
-            });
-
-            it('2425 if passed value was 9999', () => {
-                expect(TuiYear.getAbsoluteLeapYears(9999)).toBe(2425);
+                it('2425 if passed value was 9999', () => {
+                    expect(TuiYear.getAbsoluteLeapYears(9999)).toBe(2425);
+                });
             });
         });
     });
 
+    // Testes para métodos e propriedades de instância
     describe('prototype', () => {
         describe('getter', () => {
+            // Formatação do ano como string com padding
             describe('formattedYear returns', () => {
                 it("'0000' if year is 0", () => {
                     expect(new TuiYear(0).formattedYear).toBe('0000');
                 });
 
                 it("'0001' if year is 1", () => {
-                    expect(new TuiYear(0).formattedYear).toBe('0000');
+                    expect(new TuiYear(1).formattedYear).toBe('0001');
                 });
 
                 it("'0020' if year is 20", () => {
@@ -197,136 +135,72 @@ describe('TuiYear', () => {
                 });
             });
 
+            // Retorna o número absoluto de anos bissextos até o ano atual (getter da instância)
             describe('absoluteLeapYears returns', () => {
-                it('1 if year is 0', () => {
-                    expect(new TuiYear(0).absoluteLeapYears).toBe(0);
+                // Casos básicos (0-10)
+                describe('basic cases (0-10)', () => {
+                    const testCases = [
+                        [0, 0],
+                        [1, 1],
+                        [2, 1],
+                        [3, 1],
+                        [4, 1],
+                        [5, 2],
+                        [6, 2],
+                        [7, 2],
+                        [8, 2],
+                        [9, 3],
+                        [10, 3],
+                    ] as const;
+
+                    testCases.forEach(([year, expected]) => {
+                        it(`${expected} if year is ${year}`, () => {
+                            expect(new TuiYear(year).absoluteLeapYears).toBe(expected);
+                        });
+                    });
                 });
 
-                it('1 if year is 1', () => {
-                    expect(new TuiYear(1).absoluteLeapYears).toBe(1);
-                });
+                // Casos com valores grandes
+                describe('large values', () => {
+                    it('485 if year is 2000', () => {
+                        expect(new TuiYear(2000).absoluteLeapYears).toBe(485);
+                    });
 
-                it('1 if year is 2', () => {
-                    expect(new TuiYear(2).absoluteLeapYears).toBe(1);
-                });
-
-                it('1 if year is 3', () => {
-                    expect(new TuiYear(3).absoluteLeapYears).toBe(1);
-                });
-
-                it('1 if year is 4', () => {
-                    expect(new TuiYear(4).absoluteLeapYears).toBe(1);
-                });
-
-                it('2 if year is 5', () => {
-                    expect(new TuiYear(5).absoluteLeapYears).toBe(2);
-                });
-
-                it('2 if year is 6', () => {
-                    expect(new TuiYear(6).absoluteLeapYears).toBe(2);
-                });
-
-                it('2 if year is 7', () => {
-                    expect(new TuiYear(7).absoluteLeapYears).toBe(2);
-                });
-
-                it('2 if year is 8', () => {
-                    expect(new TuiYear(8).absoluteLeapYears).toBe(2);
-                });
-
-                it('3 if year is 9', () => {
-                    expect(new TuiYear(9).absoluteLeapYears).toBe(3);
-                });
-
-                it('3 if year is 10', () => {
-                    expect(new TuiYear(10).absoluteLeapYears).toBe(3);
-                });
-
-                it('485 if year is 2000', () => {
-                    expect(new TuiYear(2000).absoluteLeapYears).toBe(485);
-                });
-
-                it('2425 if year is 9999', () => {
-                    expect(new TuiYear(9999).absoluteLeapYears).toBe(2425);
+                    it('2425 if year is 9999', () => {
+                        expect(new TuiYear(9999).absoluteLeapYears).toBe(2425);
+                    });
                 });
             });
 
+            // Verifica se o ano atual é bissexto (getter da instância)
             describe('isLeapYear returns', () => {
+                // Anos que não são bissextos
                 describe('false if it is not a leap year', () => {
-                    it('1', () => {
-                        expect(new TuiYear(1).isLeapYear).toBe(false);
-                    });
+                    const nonLeapYears = [1, 2, 3, 5, 2001, 2018, 2100, 1995, 1334, 3421];
 
-                    it('2', () => {
-                        expect(new TuiYear(2).isLeapYear).toBe(false);
-                    });
-
-                    it('3', () => {
-                        expect(new TuiYear(3).isLeapYear).toBe(false);
-                    });
-
-                    it('5', () => {
-                        expect(new TuiYear(5).isLeapYear).toBe(false);
-                    });
-
-                    it('2001', () => {
-                        expect(new TuiYear(2001).isLeapYear).toBe(false);
-                    });
-
-                    it('2018', () => {
-                        expect(new TuiYear(2018).isLeapYear).toBe(false);
-                    });
-
-                    it('2100', () => {
-                        expect(new TuiYear(2100).isLeapYear).toBe(false);
-                    });
-
-                    it('1995', () => {
-                        expect(new TuiYear(1995).isLeapYear).toBe(false);
-                    });
-
-                    it('1334', () => {
-                        expect(new TuiYear(1334).isLeapYear).toBe(false);
-                    });
-
-                    it('3421', () => {
-                        expect(new TuiYear(3421).isLeapYear).toBe(false);
+                    nonLeapYears.forEach((year) => {
+                        it(`${year}`, () => {
+                            expect(new TuiYear(year).isLeapYear).toBe(false);
+                        });
                     });
                 });
 
+                // Anos que são bissextos
                 describe('true if it is a leap year', () => {
-                    it('0', () => {
-                        expect(new TuiYear(0).isLeapYear).toBe(true);
-                    });
+                    const leapYears = [0, 4, 20, 1200, 2000, 2020, 2104];
 
-                    it('4', () => {
-                        expect(new TuiYear(4).isLeapYear).toBe(true);
-                    });
-
-                    it('20', () => {
-                        expect(new TuiYear(20).isLeapYear).toBe(true);
-                    });
-
-                    it('1200', () => {
-                        expect(new TuiYear(1200).isLeapYear).toBe(true);
-                    });
-
-                    it('2000', () => {
-                        expect(new TuiYear(2000).isLeapYear).toBe(true);
-                    });
-
-                    it('2020', () => {
-                        expect(new TuiYear(2020).isLeapYear).toBe(true);
-                    });
-
-                    it('2104', () => {
-                        expect(new TuiYear(2104).isLeapYear).toBe(true);
+                    leapYears.forEach((year) => {
+                        it(`${year}`, () => {
+                            expect(new TuiYear(year).isLeapYear).toBe(true);
+                        });
                     });
                 });
             });
         });
 
+        // Testes para métodos de comparação e manipulação de instâncias
         describe('method', () => {
+            // Variáveis de teste compartilhadas para diferentes cenários
             let y2000: TuiYear;
             let y1900: TuiYear;
             let y2000v2: TuiYear;
@@ -429,32 +303,43 @@ describe('TuiYear', () => {
                 });
             });
 
+            // Adiciona anos ao ano atual e retorna novo TuiYear
             describe('append returns', () => {
-                it('TuiYear {year: 2000} if passed value was {}', () => {
-                    expect(y2000.append({}).year).toBe(2000);
+                // Valores vazios ou zero não alteram o ano
+                describe('unchanged when zero values are passed', () => {
+                    it('if {} was passed', () => {
+                        expect(y2000.append({}).year).toBe(2000);
+                    });
+
+                    it('if {year: 0} was passed', () => {
+                        expect(y2000.append({year: 0}).year).toBe(2000);
+                    });
                 });
 
-                it('TuiYear {year: 2000} if passed value was {year: 0}', () => {
-                    expect(y2000.append({year: 0}).year).toBe(2000);
+                // Ajustes simples de ano
+                describe('year adjustments', () => {
+                    it('adds years when positive value is passed', () => {
+                        expect(y2000.append({year: 1}).year).toBe(2001);
+                    });
+
+                    it('subtracts years when negative value is passed', () => {
+                        expect(y2000.append({year: -1}).year).toBe(1999);
+                    });
                 });
 
-                it('TuiYear {year: 2001} if passed value was {year: 1}', () => {
-                    expect(y2000.append({year: 1}).year).toBe(2001);
-                });
+                // Ajustes grandes de ano
+                describe('large year adjustments', () => {
+                    it('adds large number of years', () => {
+                        expect(y2000.append({year: 100}).year).toBe(2100);
+                    });
 
-                it('TuiYear {year: 1999} if passed value was {year: -1}', () => {
-                    expect(y2000.append({year: -1}).year).toBe(1999);
-                });
-
-                it('TuiYear {year: 2100} if passed value was {year: 100}', () => {
-                    expect(y2000.append({year: 100}).year).toBe(2100);
-                });
-
-                it('TuiYear {year: 1900} if passed value was {year: -100}', () => {
-                    expect(y2000.append({year: -100}).year).toBe(1900);
+                    it('subtracts large number of years', () => {
+                        expect(y2000.append({year: -100}).year).toBe(1900);
+                    });
                 });
             });
 
+            // Conversão para valor primitivo numérico
             describe('valueOf returns', () => {
                 it('the primitive value of a TuiYear object', () => {
                     const year = new TuiYear(2000);
@@ -466,6 +351,7 @@ describe('TuiYear', () => {
                 });
             });
 
+            // Conversão primitiva com Symbol.toPrimitive (controle explícito do tipo)
             describe('Symbol.toPrimitive returns', () => {
                 it('a number if the hint is number', () => {
                     const year = new TuiYear(1701);
@@ -493,6 +379,7 @@ describe('TuiYear', () => {
         });
     });
 
+    // Verifica se toString() retorna o mesmo que formattedYear
     it('stringified value equals formatted', () => {
         const month = new TuiYear(2000);
 
