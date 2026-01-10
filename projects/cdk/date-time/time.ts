@@ -85,7 +85,8 @@ export class TuiTime implements TuiTimeLike {
     }
 
     /**
-     * Calculates TuiTime from milliseconds
+     * Calculates TuiTime from absolute milliseconds
+     * Calcula TuiTime a partir de milissegundos absolutos
      */
     public static fromAbsoluteMilliseconds(milliseconds: number): TuiTime {
         ngDevMode &&
@@ -94,18 +95,12 @@ export class TuiTime implements TuiTimeLike {
                 'Milliseconds must be a non-negative integer.',
             );
 
+        const remainingAfterHours = milliseconds % MILLISECONDS_IN_HOUR;
         const hours = Math.floor(milliseconds / MILLISECONDS_IN_HOUR);
-        const minutes = Math.floor(
-            (milliseconds % MILLISECONDS_IN_HOUR) / MILLISECONDS_IN_MINUTE,
-        );
-        const seconds =
-            Math.floor(
-                ((milliseconds % MILLISECONDS_IN_HOUR) % MILLISECONDS_IN_MINUTE) / 1000,
-            ) || 0;
-        const ms =
-            Math.floor(
-                ((milliseconds % MILLISECONDS_IN_HOUR) % MILLISECONDS_IN_MINUTE) % 1000,
-            ) || 0;
+        const minutes = Math.floor(remainingAfterHours / MILLISECONDS_IN_MINUTE);
+        const remainingAfterMinutes = remainingAfterHours % MILLISECONDS_IN_MINUTE;
+        const seconds = Math.floor(remainingAfterMinutes / MILLISECONDS_IN_SECOND) || 0;
+        const ms = remainingAfterMinutes % MILLISECONDS_IN_SECOND || 0;
 
         return new TuiTime(hours, minutes, seconds, ms);
     }
@@ -162,22 +157,54 @@ export class TuiTime implements TuiTimeLike {
      * Shifts time by hours and minutes
      */
     public shift({hours = 0, minutes = 0, seconds = 0, ms = 0}: TuiTimeLike): TuiTime {
-        const totalMs =
+        const totalMs = this.calculateTotalMilliseconds(hours, minutes, seconds, ms);
+        const timeUnits = this.extractTimeUnits(totalMs);
+
+        return new TuiTime(
+            this.normalizeToRange(timeUnits.hours, HOURS_IN_DAY),
+            this.normalizeToRange(timeUnits.minutes, MINUTES_IN_HOUR),
+            this.normalizeToRange(timeUnits.seconds, SECONDS_IN_MINUTE),
+            this.normalizeToRange(timeUnits.ms, MILLISECONDS_IN_SECOND),
+        );
+    }
+
+    /**
+     * Calculates total milliseconds after shift
+     */
+    private calculateTotalMilliseconds(
+        hours: number,
+        minutes: number,
+        seconds: number,
+        ms: number,
+    ): number {
+        return (
             this.toAbsoluteMilliseconds() +
             hours * MILLISECONDS_IN_HOUR +
             minutes * MILLISECONDS_IN_MINUTE +
             seconds * MILLISECONDS_IN_SECOND +
-            ms;
+            ms
+        );
+    }
+
+    /**
+     * Extracts time units from total milliseconds
+     */
+    private extractTimeUnits(totalMs: number): {
+        hours: number;
+        minutes: number;
+        seconds: number;
+        ms: number;
+    } {
         const totalSeconds = Math.floor(totalMs / MILLISECONDS_IN_SECOND);
         const totalMinutes = Math.floor(totalSeconds / SECONDS_IN_MINUTE);
         const totalHours = Math.floor(totalMinutes / MINUTES_IN_HOUR);
 
-        return new TuiTime(
-            this.normalizeToRange(totalHours, HOURS_IN_DAY),
-            this.normalizeToRange(totalMinutes, MINUTES_IN_HOUR),
-            this.normalizeToRange(totalSeconds, SECONDS_IN_MINUTE),
-            this.normalizeToRange(totalMs, MILLISECONDS_IN_SECOND),
-        );
+        return {
+            hours: totalHours,
+            minutes: totalMinutes,
+            seconds: totalSeconds,
+            ms: totalMs,
+        };
     }
 
     /**
@@ -197,18 +224,47 @@ export class TuiTime implements TuiTimeLike {
             | 'MM:SS'
             | 'SS.MSS',
     ): string {
+        const formatOptions = this.determineFormatOptions(mode);
+        const {hours, meridiem} = this.getFormattedHours(mode);
+        const hhMm = `${this.formatTime(hours)}:${this.formatTime(this.minutes)}`;
+        const ss = formatOptions.includeSeconds
+            ? `:${this.formatTime(this.seconds)}`
+            : '';
+        const mss = formatOptions.includeMs ? `.${this.formatTime(this.ms, 3)}` : '';
+        const aa = meridiem ? `${CHAR_NO_BREAK_SPACE}${meridiem}` : '';
+
+        return `${hhMm}${ss}${mss}${aa}`;
+    }
+
+    /**
+     * Determines format options based on mode
+     */
+    private determineFormatOptions(mode?: string): {
+        includeSeconds: boolean;
+        includeMs: boolean;
+    } {
         const needAddMs = mode?.startsWith('HH:MM:SS.MSS') || (!mode && this.ms > 0);
         const needAddSeconds =
             needAddMs || mode?.startsWith('HH:MM:SS') || (!mode && this.seconds > 0);
-        const {hours = this.hours, meridiem = ''} = mode?.includes('AA')
-            ? this.toTwelveHour(this.hours)
-            : {};
-        const hhMm = `${this.formatTime(hours)}:${this.formatTime(this.minutes)}`;
-        const ss = needAddSeconds ? `:${this.formatTime(this.seconds)}` : '';
-        const mss = needAddMs ? `.${this.formatTime(this.ms, 3)}` : '';
-        const aa = meridiem && `${CHAR_NO_BREAK_SPACE}${meridiem}`;
 
-        return `${hhMm}${ss}${mss}${aa}`;
+        return {
+            includeSeconds: needAddSeconds,
+            includeMs: needAddMs,
+        };
+    }
+
+    /**
+     * Returns formatted hours with meridiem if needed
+     */
+    private getFormattedHours(mode?: string): {
+        hours: number;
+        meridiem: string;
+    } {
+        if (mode?.includes('AA')) {
+            return this.toTwelveHour(this.hours);
+        }
+
+        return {hours: this.hours, meridiem: ''};
     }
 
     public valueOf(): number {

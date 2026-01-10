@@ -16,6 +16,31 @@ import {type TuiSchema} from '../schema';
 
 const collectionPath = join(__dirname, '../../collection.json');
 
+const EXPECTED_PACKAGE_JSON_MAIN = `{
+  "dependencies": {
+    "@angular/core": "~13.0.0",
+    "@taiga-ui/cdk": "${TAIGA_VERSION}",
+    "@taiga-ui/core": "${TAIGA_VERSION}",
+    "@taiga-ui/event-plugins": "^4.0.2",
+    "@taiga-ui/icons": "${TAIGA_VERSION}",
+    "@taiga-ui/kit": "${TAIGA_VERSION}"
+  }
+}`;
+
+const EXPECTED_PACKAGE_JSON_WITH_ADDONS = `{
+  "dependencies": {
+    "@angular/cdk": "^13.0.0",
+    "@angular/core": "~13.0.0",
+    "@taiga-ui/addon-doc": "${TAIGA_VERSION}",
+    "@taiga-ui/addon-mobile": "${TAIGA_VERSION}",
+    "@taiga-ui/cdk": "${TAIGA_VERSION}",
+    "@taiga-ui/core": "${TAIGA_VERSION}",
+    "@taiga-ui/event-plugins": "^4.0.2",
+    "@taiga-ui/icons": "${TAIGA_VERSION}",
+    "@taiga-ui/kit": "${TAIGA_VERSION}"
+  }
+}`;
+
 describe('ng-add [Standalone]', () => {
     let host: UnitTestTree;
     let runner: SchematicTestRunner;
@@ -44,18 +69,7 @@ describe('ng-add [Standalone]', () => {
 
         const tree = await runner.runSchematic('ng-add', options, host);
 
-        expect(tree.readContent('package.json')).toBe(
-            `{
-  "dependencies": {
-    "@angular/core": "~13.0.0",
-    "@taiga-ui/cdk": "${TAIGA_VERSION}",
-    "@taiga-ui/core": "${TAIGA_VERSION}",
-    "@taiga-ui/event-plugins": "^4.0.2",
-    "@taiga-ui/icons": "${TAIGA_VERSION}",
-    "@taiga-ui/kit": "${TAIGA_VERSION}"
-  }
-}`,
-        );
+        expect(tree.readContent('package.json')).toBe(EXPECTED_PACKAGE_JSON_MAIN);
     });
 
     it('should add additional modules in package.json and global styles', async () => {
@@ -67,21 +81,7 @@ describe('ng-add [Standalone]', () => {
 
         const tree = await runner.runSchematic('ng-add', options, host);
 
-        expect(tree.readContent('package.json')).toBe(
-            `{
-  "dependencies": {
-    "@angular/cdk": "^13.0.0",
-    "@angular/core": "~13.0.0",
-    "@taiga-ui/addon-doc": "${TAIGA_VERSION}",
-    "@taiga-ui/addon-mobile": "${TAIGA_VERSION}",
-    "@taiga-ui/cdk": "${TAIGA_VERSION}",
-    "@taiga-ui/core": "${TAIGA_VERSION}",
-    "@taiga-ui/event-plugins": "^4.0.2",
-    "@taiga-ui/icons": "${TAIGA_VERSION}",
-    "@taiga-ui/kit": "${TAIGA_VERSION}"
-  }
-}`,
-        );
+        expect(tree.readContent('package.json')).toBe(EXPECTED_PACKAGE_JSON_WITH_ADDONS);
     });
 
     it('should add assets and styles in angular.json', async () => {
@@ -321,27 +321,17 @@ bootstrapApplication(App, {
 });
 
 function createMainStandaloneFiles(): void {
-    createSourceFile(
-        'test/main.ts',
-        `import { bootstrapApplication } from '@angular/platform-browser';
-import {
-  provideRouter,
-  withEnabledBlockingInitialNavigation,
-} from '@angular/router';
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { appRoutes } from './app/app.routes';
-import { App } from './app/app.component';
+    createMainTsFile(getMainTsContentWithAnimations());
+    createAppComponentFile();
+    createAppTemplateFile();
+}
 
-bootstrapApplication(App, {
-  providers: [provideAnimations(), provideRouter(appRoutes, withEnabledBlockingInitialNavigation()), importProvidersFrom(SomeModule)],
-}).catch((err) => console.error(err));
-`,
-        {overwrite: true},
-    );
+function createMainTsFile(content: string): void {
+    createSourceFile('test/main.ts', content, {overwrite: true});
+}
 
-    createSourceFile(
-        'test/app/app.component.ts',
-        `import { Component } from '@angular/core';
+function createAppComponentFile(): void {
+    const appComponentContent = `import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -353,17 +343,35 @@ import { RouterModule } from '@angular/router';
 })
 export class App {
   title = 'standalone-test';
-}`,
-        {overwrite: true},
-    );
+}`;
 
+    createSourceFile('test/app/app.component.ts', appComponentContent, {
+        overwrite: true,
+    });
+}
+
+function createAppTemplateFile(): void {
     createSourceFile('test/app/app.template.html', '<app></app>', {overwrite: true});
 }
 
+function getMainTsContentWithAnimations(): string {
+    return `import { bootstrapApplication } from '@angular/platform-browser';
+import {
+  provideRouter,
+  withEnabledBlockingInitialNavigation,
+} from '@angular/router';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { appRoutes } from './app/app.routes';
+import { App } from './app/app.component';
+
+bootstrapApplication(App, {
+  providers: [provideAnimations(), provideRouter(appRoutes, withEnabledBlockingInitialNavigation()), importProvidersFrom(SomeModule)],
+}).catch((err) => console.error(err));
+`;
+}
+
 function createMainWithoutAnimation(): void {
-    createSourceFile(
-        'test/main.ts',
-        `import { bootstrapApplication } from '@angular/platform-browser';
+    const mainTsContent = `import { bootstrapApplication } from '@angular/platform-browser';
 import {
   provideRouter,
   withEnabledBlockingInitialNavigation,
@@ -374,15 +382,18 @@ import { App } from './app/app.component';
 bootstrapApplication(App, {
   providers: [provideRouter(appRoutes, withEnabledBlockingInitialNavigation())],
 }).catch((err) => console.error(err));
-`,
-        {overwrite: true},
-    );
+`;
+
+    createMainTsFile(mainTsContent);
 }
 
 function createMainWithConfig(): void {
-    createSourceFile(
-        'test/main.ts',
-        `import { bootstrapApplication } from '@angular/platform-browser';
+    createMainTsFileWithConfig();
+    createAppConfigFile();
+}
+
+function createMainTsFileWithConfig(): void {
+    const mainTsContent = `import { bootstrapApplication } from '@angular/platform-browser';
 import {
   provideRouter,
   withEnabledBlockingInitialNavigation,
@@ -392,13 +403,13 @@ import { App } from './app/app.component';
 import { appConfig } from './app/app.config';
 
 bootstrapApplication(App, appConfig).catch((err) => console.error(err));
-`,
-        {overwrite: true},
-    );
+`;
 
-    createSourceFile(
-        'test/app/app.config.ts',
-        `
+    createMainTsFile(mainTsContent);
+}
+
+function createAppConfigFile(): void {
+    const appConfigContent = `
 import { ApplicationConfig } from '@angular/core';
 import {
   provideRouter,
@@ -409,7 +420,7 @@ import { appRoutes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [provideRouter(appRoutes, withEnabledBlockingInitialNavigation()), provideAnimations()],
-};`,
-        {overwrite: true},
-    );
+};`;
+
+    createSourceFile('test/app/app.config.ts', appConfigContent, {overwrite: true});
 }
