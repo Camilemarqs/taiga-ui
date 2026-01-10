@@ -2,6 +2,7 @@ import {DOCUMENT, NgTemplateOutlet} from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
+    computed,
     ElementRef,
     inject,
     type Signal,
@@ -41,6 +42,10 @@ import {
     NAVIGATION_TITLE,
 } from './navigation.providers';
 import {TuiDocScrollIntoViewLink} from './scroll-into-view.directive';
+import {
+    type TuiDocNavigationSearchConfig,
+    type TuiDocNavigationStateConfig,
+} from './navigation-config.interface';
 
 function tuiUniqBy<T extends Record<string, any>>(
     array: readonly T[],
@@ -84,15 +89,13 @@ function tuiUniqBy<T extends Record<string, any>>(
     },
 })
 export class TuiDocNavigation {
+    // VIEW CHILDREN E ELEMENTOS
     private readonly searchInput: Signal<ElementRef<HTMLInputElement> | undefined> =
         viewChild(TuiInputDirective, {read: ElementRef});
 
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly router = inject(Router);
     private readonly doc = inject(DOCUMENT);
-
-    protected open = signal(false);
-    protected menuOpen = false;
-
     protected readonly drawer = inject(TuiDrawer, {optional: true});
     protected readonly labels = inject(NAVIGATION_LABELS);
     protected readonly items = inject(NAVIGATION_ITEMS);
@@ -100,6 +103,15 @@ export class TuiDocNavigation {
     protected readonly searchEnabled = inject(TUI_DOC_SEARCH_ENABLED);
     protected readonly docIcons = inject(TUI_DOC_ICONS);
     protected readonly icons = inject(TUI_COMMON_ICONS);
+
+    // ESTADO E ARRAYS
+    protected open = signal(false);
+    protected menuOpen = false;
+    protected openPagesArr: boolean[] = [];
+    protected openPagesGroupsArr: boolean[] = [];
+    protected active = '';
+
+    // PROPRIEDADES COMPUTADAS - Estrutura de navegação
     protected readonly flat = this.items.reduce<
         ReadonlyArray<readonly TuiDocRoutePage[]>
     >(
@@ -114,12 +126,28 @@ export class TuiDocNavigation {
         [],
     );
 
-    protected openPagesArr: boolean[] = [];
-    protected openPagesGroupsArr: boolean[] = [];
-    protected active = '';
-
+    // FORM CONTROL - Busca
     protected readonly search = new FormControl('');
 
+    // CONFIGURAÇÕES AGRUPADAS - Agrega estados relacionados para lógica interna
+
+    /** Configuração de estado agrupada */
+    protected readonly stateConfig = computed<TuiDocNavigationStateConfig>(() => ({
+        menuOpen: this.menuOpen,
+        open: this.open(),
+        active: this.active,
+        openPagesArr: this.openPagesArr,
+        openPagesGroupsArr: this.openPagesGroupsArr,
+    }));
+
+    /** Configuração de busca agrupada */
+    protected readonly searchConfig = computed<TuiDocNavigationSearchConfig>(() => ({
+        search: this.search.value || '',
+        canOpen: (this.search.value?.length ?? 0) > 2,
+        filtered: this.filtered(),
+    }));
+
+    // COMPUTED VALUES - Filtros e busca
     protected readonly filtered = toSignal(
         tuiControlValue<string>(this.search).pipe(
             filter((search) => search.trim().length > 2),
@@ -161,8 +189,10 @@ export class TuiDocNavigation {
             .subscribe((anchor) => this.navigateToAnchorLink(anchor));
     }
 
+    // GETTERS E PROPRIEDADES COMPUTED
+
     protected get canOpen(): boolean {
-        return (this.search.value?.length ?? 0) > 2;
+        return this.searchConfig().canOpen;
     }
 
     protected get itemsWithoutSections(): TuiDocRoutePages {
@@ -173,8 +203,10 @@ export class TuiDocNavigation {
         return pages as TuiDocRoutePage[];
     }
 
+    // MÉTODOS PROTEGIDOS - Handlers de eventos
+
     protected isActive(route: string): boolean {
-        return route === this.active;
+        return route === this.stateConfig().active;
     }
 
     protected onGroupClick(index: number): void {
@@ -267,7 +299,6 @@ export class TuiDocNavigation {
             return;
         }
 
-        // emulate :target event
         const target = this.doc.createElement('a');
 
         target.href = `${this.doc.location.pathname}#${fragment}`;
