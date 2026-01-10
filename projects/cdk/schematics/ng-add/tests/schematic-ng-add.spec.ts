@@ -16,6 +16,31 @@ import {type TuiSchema} from '../schema';
 
 const collectionPath = join(__dirname, '../../collection.json');
 
+const EXPECTED_PACKAGE_JSON_MAIN = `{
+  "dependencies": {
+    "@angular/core": "~13.0.0",
+    "@taiga-ui/cdk": "${TAIGA_VERSION}",
+    "@taiga-ui/core": "${TAIGA_VERSION}",
+    "@taiga-ui/event-plugins": "^4.0.2",
+    "@taiga-ui/icons": "${TAIGA_VERSION}",
+    "@taiga-ui/kit": "${TAIGA_VERSION}"
+  }
+}`;
+
+const EXPECTED_PACKAGE_JSON_WITH_ADDONS = `{
+  "dependencies": {
+    "@angular/cdk": "^13.0.0",
+    "@angular/core": "~13.0.0",
+    "@taiga-ui/addon-doc": "${TAIGA_VERSION}",
+    "@taiga-ui/addon-mobile": "${TAIGA_VERSION}",
+    "@taiga-ui/cdk": "${TAIGA_VERSION}",
+    "@taiga-ui/core": "${TAIGA_VERSION}",
+    "@taiga-ui/event-plugins": "^4.0.2",
+    "@taiga-ui/icons": "${TAIGA_VERSION}",
+    "@taiga-ui/kit": "${TAIGA_VERSION}"
+  }
+}`;
+
 describe('ng-add', () => {
     let host: UnitTestTree;
     let runner: SchematicTestRunner;
@@ -44,18 +69,7 @@ describe('ng-add', () => {
 
         const tree = await runner.runSchematic('ng-add', options, host);
 
-        expect(tree.readContent('package.json')).toBe(
-            `{
-  "dependencies": {
-    "@angular/core": "~13.0.0",
-    "@taiga-ui/cdk": "${TAIGA_VERSION}",
-    "@taiga-ui/core": "${TAIGA_VERSION}",
-    "@taiga-ui/event-plugins": "^4.0.2",
-    "@taiga-ui/icons": "${TAIGA_VERSION}",
-    "@taiga-ui/kit": "${TAIGA_VERSION}"
-  }
-}`,
-        );
+        expect(tree.readContent('package.json')).toBe(EXPECTED_PACKAGE_JSON_MAIN);
     });
 
     it('should add additional modules in package.json', async () => {
@@ -67,21 +81,7 @@ describe('ng-add', () => {
 
         const tree = await runner.runSchematic('ng-add', options, host);
 
-        expect(tree.readContent('package.json')).toBe(
-            `{
-  "dependencies": {
-    "@angular/cdk": "^13.0.0",
-    "@angular/core": "~13.0.0",
-    "@taiga-ui/addon-doc": "${TAIGA_VERSION}",
-    "@taiga-ui/addon-mobile": "${TAIGA_VERSION}",
-    "@taiga-ui/cdk": "${TAIGA_VERSION}",
-    "@taiga-ui/core": "${TAIGA_VERSION}",
-    "@taiga-ui/event-plugins": "^4.0.2",
-    "@taiga-ui/icons": "${TAIGA_VERSION}",
-    "@taiga-ui/kit": "${TAIGA_VERSION}"
-  }
-}`,
-        );
+        expect(tree.readContent('package.json')).toBe(EXPECTED_PACKAGE_JSON_WITH_ADDONS);
     });
 
     it('should add additional modules in package.json and global styles', async () => {
@@ -93,21 +93,7 @@ describe('ng-add', () => {
 
         const tree = await runner.runSchematic('ng-add', options, host);
 
-        expect(tree.readContent('package.json')).toBe(
-            `{
-  "dependencies": {
-    "@angular/cdk": "^13.0.0",
-    "@angular/core": "~13.0.0",
-    "@taiga-ui/addon-doc": "${TAIGA_VERSION}",
-    "@taiga-ui/addon-mobile": "${TAIGA_VERSION}",
-    "@taiga-ui/cdk": "${TAIGA_VERSION}",
-    "@taiga-ui/core": "${TAIGA_VERSION}",
-    "@taiga-ui/event-plugins": "^4.0.2",
-    "@taiga-ui/icons": "${TAIGA_VERSION}",
-    "@taiga-ui/kit": "${TAIGA_VERSION}"
-  }
-}`,
-        );
+        expect(tree.readContent('package.json')).toBe(EXPECTED_PACKAGE_JSON_WITH_ADDONS);
     });
 
     it('should add assets and styles in angular.json', async () => {
@@ -266,9 +252,14 @@ export class AppModule {}
 });
 
 function createMainFiles(): void {
-    createSourceFile(
-        'test/main.ts',
-        `import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
+    createMainTsFile();
+    createAppModuleFile();
+    createAppComponentFile();
+    createAppTemplateFile();
+}
+
+function createMainTsFile(): void {
+    const mainTsContent = `import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
   import {AppModule} from './app/app.module';
   import {environment} from './environments/environment';
 
@@ -279,27 +270,32 @@ function createMainFiles(): void {
   platformBrowserDynamic()
     .bootstrapModule(AppModule)
     .catch(err => console.log(err));
-  `,
-    );
+  `;
 
-    createSourceFile(
-        'test/app/app.module.ts',
-        `import {NgModule} from '@angular/core';
+    createSourceFile('test/main.ts', mainTsContent);
+}
+
+function createAppModuleFile(): void {
+    const appModuleContent = `import {NgModule} from '@angular/core';
 import {App} from './app.component';
 
 @NgModule({declarations: [App]})
 export class AppModule {}
-`,
-    );
+`;
 
-    createSourceFile(
-        'test/app/app.component.ts',
-        `import {Component} from '@angular/core';
+    createSourceFile('test/app/app.module.ts', appModuleContent);
+}
+
+function createAppComponentFile(): void {
+    const appComponentContent = `import {Component} from '@angular/core';
 import {App} from './app.component';
 
 @Component({templateUrl: './app.template.html'})
-export class App {}`,
-    );
+export class App {}`;
 
+    createSourceFile('test/app/app.component.ts', appComponentContent);
+}
+
+function createAppTemplateFile(): void {
     createSourceFile('test/app/app.template.html', '<app></app>');
 }
