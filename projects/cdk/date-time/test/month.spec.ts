@@ -3,7 +3,9 @@ import {TuiMonth, TuiMonthNumber} from '@taiga-ui/cdk';
 import {tuiMockDateInside} from './helpers';
 
 describe('TuiMonth', () => {
+    // Testes para métodos estáticos da classe TuiMonth
     describe('static method', () => {
+        // Validação de mês válido/inválido
         describe('isValidMonth', () => {
             describe('invalid month', () => {
                 it('NaN', () => {
@@ -43,81 +45,87 @@ describe('TuiMonth', () => {
         });
 
         describe('getMonthDaysCount returns', () => {
-            describe('31 if month is', () => {
-                it('January', () => {
+            // Meses com 31 dias: Janeiro, Maio, Julho, Agosto, Outubro, Dezembro
+            describe('31 days for months', () => {
+                it('returns 31 for January', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.January, true)).toBe(
                         31,
                     );
                 });
 
-                it('May', () => {
+                it('returns 31 for May', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.May, true)).toBe(31);
                 });
 
-                it('July', () => {
+                it('returns 31 for July', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.July, true)).toBe(
                         31,
                     );
                 });
 
-                it('August', () => {
+                it('returns 31 for August', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.August, true)).toBe(
                         31,
                     );
                 });
 
-                it('October', () => {
+                it('returns 31 for October', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.October, true)).toBe(
                         31,
                     );
                 });
 
-                it('December', () => {
+                it('returns 31 for December', () => {
                     expect(
                         TuiMonth.getMonthDaysCount(TuiMonthNumber.December, true),
                     ).toBe(31);
                 });
             });
 
-            describe('30 if month is', () => {
-                it('April', () => {
+            // Meses com 30 dias: Abril, Junho, Setembro, Novembro
+            describe('30 days for months', () => {
+                it('returns 30 for April', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.April, true)).toBe(
                         30,
                     );
                 });
 
-                it('June', () => {
+                it('returns 30 for June', () => {
                     expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.June, true)).toBe(
                         30,
                     );
                 });
 
-                it('September', () => {
+                it('returns 30 for September', () => {
                     expect(
                         TuiMonth.getMonthDaysCount(TuiMonthNumber.September, true),
                     ).toBe(30);
                 });
 
-                it('November', () => {
+                it('returns 30 for November', () => {
                     expect(
                         TuiMonth.getMonthDaysCount(TuiMonthNumber.November, true),
                     ).toBe(30);
                 });
             });
 
-            it('29 if month is February and the year is a leap year', () => {
-                expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.February, true)).toBe(
-                    29,
-                );
-            });
+            // Fevereiro: caso especial que varia com ano bissexto
+            describe('February days count', () => {
+                it('returns 29 if the year is a leap year', () => {
+                    expect(
+                        TuiMonth.getMonthDaysCount(TuiMonthNumber.February, true),
+                    ).toBe(29);
+                });
 
-            it('28 if month is February and the year is not a leap year', () => {
-                expect(TuiMonth.getMonthDaysCount(TuiMonthNumber.February, false)).toBe(
-                    28,
-                );
+                it('returns 28 if the year is not a leap year', () => {
+                    expect(
+                        TuiMonth.getMonthDaysCount(TuiMonthNumber.February, false),
+                    ).toBe(28);
+                });
             });
         });
 
+        // Retorna o mês atual no fuso horário local
         describe('currentLocal', () => {
             it('UTC month is the same as local', () => {
                 tuiMockDateInside(Date.UTC(2000, 0, 31, 10), () => {
@@ -138,6 +146,7 @@ describe('TuiMonth', () => {
             });
         });
 
+        // Retorna o mês atual no fuso horário UTC
         describe('currentUtc', () => {
             it('UTC is the same as local', () => {
                 tuiMockDateInside(new Date(2000, 0, 31, 10), () => {
@@ -158,6 +167,7 @@ describe('TuiMonth', () => {
             });
         });
 
+        // Calcula a diferença em meses entre dois TuiMonth
         describe('lengthBetween', () => {
             it('one month', () => {
                 const first = new TuiMonth(2020, 4);
@@ -182,8 +192,10 @@ describe('TuiMonth', () => {
         });
     });
 
+    // Testes para métodos e propriedades de instância
     describe('prototype', () => {
         describe('getter', () => {
+            // Formatação do mês como string com padding
             describe('formattedMonthPart returns', () => {
                 describe("month with padded '0' if it is a single digit month", () => {
                     it("'01' if month is 0", () => {
@@ -206,8 +218,10 @@ describe('TuiMonth', () => {
                 });
             });
 
+            // Retorna a contagem de dias do mês (getter da instância)
             describe('daysCount', () => {
-                describe('31 if month is', () => {
+                // Meses com 31 dias
+                describe('returns 31 for months', () => {
                     it('January', () => {
                         expect(new TuiMonth(2000, TuiMonthNumber.January).daysCount).toBe(
                             31,
@@ -243,7 +257,8 @@ describe('TuiMonth', () => {
                     });
                 });
 
-                describe('30 if month is', () => {
+                // Meses com 30 dias
+                describe('returns 30 for months', () => {
                     it('April', () => {
                         expect(new TuiMonth(2000, TuiMonthNumber.April).daysCount).toBe(
                             30,
@@ -269,21 +284,26 @@ describe('TuiMonth', () => {
                     });
                 });
 
-                it('29 if month is February and the year is a leap year', () => {
-                    expect(new TuiMonth(2000, TuiMonthNumber.February).daysCount).toBe(
-                        29,
-                    );
-                });
+                // Fevereiro: varia conforme ano bissexto
+                describe('February days count', () => {
+                    it('returns 29 if the year is a leap year', () => {
+                        expect(
+                            new TuiMonth(2000, TuiMonthNumber.February).daysCount,
+                        ).toBe(29);
+                    });
 
-                it('28 if month is February and the year is not a leap year', () => {
-                    expect(new TuiMonth(2001, TuiMonthNumber.February).daysCount).toBe(
-                        28,
-                    );
+                    it('returns 28 if the year is not a leap year', () => {
+                        expect(
+                            new TuiMonth(2001, TuiMonthNumber.February).daysCount,
+                        ).toBe(28);
+                    });
                 });
             });
         });
 
+        // Testes para métodos de comparação e manipulação de instâncias
         describe('method', () => {
+            // Variáveis de teste compartilhadas para diferentes cenários
             let y1900m6: TuiMonth;
             let y2000m4: TuiMonth;
             let y2000m6: TuiMonth;
@@ -450,73 +470,87 @@ describe('TuiMonth', () => {
                 });
             });
 
+            // Adiciona anos/meses ao mês atual e retorna novo TuiMonth
             describe('append returns', () => {
-                it('TuiMonth {year: 2000, month: 6} if passed value was {}', () => {
-                    const result: TuiMonth = y2000m6.append({});
+                // Valores vazios ou zero não alteram o mês
+                describe('unchanged when zero values are passed', () => {
+                    it('if {} was passed', () => {
+                        const result: TuiMonth = y2000m6.append({});
 
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
-                });
-
-                it('TuiMonth {year: 2000, month: 6} if passed value was {year: 0, month: 0}', () => {
-                    const result: TuiMonth = y2000m6.append({
-                        year: 0,
-                        month: 0,
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
                     });
 
-                    expect(result.year).toBe(2000);
-                    expect(result.month).toBe(6);
+                    it('if {year: 0, month: 0} was passed', () => {
+                        const result: TuiMonth = y2000m6.append({
+                            year: 0,
+                            month: 0,
+                        });
+
+                        expect(result.year).toBe(2000);
+                        expect(result.month).toBe(6);
+                    });
                 });
 
-                it('TuiMonth {year: 2001, month: 6} if passed value was {year: 1}', () => {
-                    const result: TuiMonth = y2000m6.append({year: 1});
+                // Ajustes de ano
+                describe('year adjustments', () => {
+                    it('adds years when positive value is passed', () => {
+                        const result: TuiMonth = y2000m6.append({year: 1});
 
-                    expect(result.year).toBe(2001);
-                    expect(result.month).toBe(6);
-                });
-
-                it('TuiMonth {year: 1999 month: 6} if passed value was {year: -1}', () => {
-                    const result: TuiMonth = y2000m6.append({year: -1});
-
-                    expect(result.year).toBe(1999);
-                    expect(result.month).toBe(6);
-                });
-
-                it('TuiMonth {year: 2001, month: 6} if passed value was {month: 12}', () => {
-                    const result: TuiMonth = y2000m6.append({month: 12});
-
-                    expect(result.year).toBe(2001);
-                    expect(result.month).toBe(6);
-                });
-
-                it('TuiMonth {year: 1999, month: 6} if passed value was {month: -12}', () => {
-                    const result: TuiMonth = y2000m6.append({month: -12});
-
-                    expect(result.year).toBe(1999);
-                    expect(result.month).toBe(6);
-                });
-
-                it('TuiMonth {year: 2001, month: 7} if passed value was {year: 1, month: 1}', () => {
-                    const result: TuiMonth = y2000m6.append({
-                        year: 1,
-                        month: 1,
+                        expect(result.year).toBe(2001);
+                        expect(result.month).toBe(6);
                     });
 
-                    expect(result.year).toBe(2001);
-                    expect(result.month).toBe(7);
+                    it('subtracts years when negative value is passed', () => {
+                        const result: TuiMonth = y2000m6.append({year: -1});
+
+                        expect(result.year).toBe(1999);
+                        expect(result.month).toBe(6);
+                    });
                 });
 
-                it('TuiMonth {year: 1999, month: 5} if passed value was {year: -1, month: -1}', () => {
-                    const result: TuiMonth = y2000m6.append({
-                        year: -1,
-                        month: -1,
+                // Ajustes de mês (transições entre anos)
+                describe('month adjustments with year transitions', () => {
+                    it('adds 12 months and moves to next year', () => {
+                        const result: TuiMonth = y2000m6.append({month: 12});
+
+                        expect(result.year).toBe(2001);
+                        expect(result.month).toBe(6);
                     });
 
-                    expect(result.year).toBe(1999);
-                    expect(result.month).toBe(5);
+                    it('subtracts 12 months and moves to previous year', () => {
+                        const result: TuiMonth = y2000m6.append({month: -12});
+
+                        expect(result.year).toBe(1999);
+                        expect(result.month).toBe(6);
+                    });
+                });
+
+                // Combinações de ano e mês
+                describe('combined year and month adjustments', () => {
+                    it('adds both year and month together', () => {
+                        const result: TuiMonth = y2000m6.append({
+                            year: 1,
+                            month: 1,
+                        });
+
+                        expect(result.year).toBe(2001);
+                        expect(result.month).toBe(7);
+                    });
+
+                    it('subtracts both year and month together', () => {
+                        const result: TuiMonth = y2000m6.append({
+                            year: -1,
+                            month: -1,
+                        });
+
+                        expect(result.year).toBe(1999);
+                        expect(result.month).toBe(5);
+                    });
                 });
             });
 
+            // Serialização para JSON (formato YYYY-MM)
             describe('toJSON returns', () => {
                 it("'2000-01' for TuiMonth {year: 2000, month: 0}", () => {
                     expect(new TuiMonth(2000, 0).toJSON()).toBe('2000-01');
@@ -547,6 +581,7 @@ describe('TuiMonth', () => {
                 );
             });
 
+            // Conversão para valor primitivo numérico
             describe('valueOf returns', () => {
                 it('the primitive value of a TuiMonth object', () => {
                     const month = new TuiMonth(2000, 5);
@@ -558,6 +593,7 @@ describe('TuiMonth', () => {
                 });
             });
 
+            // Conversão primitiva com Symbol.toPrimitive (controle explícito do tipo)
             describe('Symbol.toPrimitive returns', () => {
                 it('a number if the hint is number', () => {
                     const month = new TuiMonth(1998, 7);
