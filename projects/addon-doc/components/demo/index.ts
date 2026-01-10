@@ -120,7 +120,7 @@ export class TuiDocDemo implements AfterViewInit {
     );
 
     // CONFIGURAÇÕES AGRUPADAS - Agrega estados relacionados para lógica interna
-    
+
     /** Configuração de tema agrupada */
     protected readonly themeConfig = computed<TuiDocDemoThemeConfig>(() => ({
         dark: this.dark(),
@@ -159,7 +159,7 @@ export class TuiDocDemo implements AfterViewInit {
         .subscribe((mode) => this.onModeChange(mode));
 
     // LIFECYCLE HOOKS
-    
+
     public ngAfterViewInit(): void {
         this.createForm();
         this.updateWidth(this.sandboxConfig().sandboxWidth + this.delta);
@@ -167,7 +167,7 @@ export class TuiDocDemo implements AfterViewInit {
     }
 
     // MÉTODOS PROTEGIDOS - Eventos de UI
-    
+
     protected onResize(): void {
         this.updateWidth();
         this.onMouseUp();
@@ -202,7 +202,7 @@ export class TuiDocDemo implements AfterViewInit {
     }
 
     // MÉTODOS PROTEGIDOS - Manipulação de dimensões
-    
+
     protected updateWidth(width = NaN): void {
         if (!this.resizer() || !this.resizable() || !this.content()) {
             return;
@@ -219,7 +219,7 @@ export class TuiDocDemo implements AfterViewInit {
     }
 
     // MÉTODOS PRIVADOS - Helpers e utilitários
-    
+
     private get delta(): number {
         return this.resizable() && this.content()
             ? this.resizable().nativeElement.clientWidth -
@@ -232,7 +232,7 @@ export class TuiDocDemo implements AfterViewInit {
     }
 
     // MÉTODOS PRIVADOS - Manipulação de URL
-    
+
     private updateUrl(params: TuiDemoParams): void {
         const tree = this.getUrlTree();
         const {queryParams} = tree;
@@ -252,7 +252,7 @@ export class TuiDocDemo implements AfterViewInit {
     }
 
     // MÉTODOS PRIVADOS - Manipulação de formulário
-    
+
     private createForm(): void {
         const control = this.control();
 

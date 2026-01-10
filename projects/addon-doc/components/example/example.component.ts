@@ -37,6 +37,10 @@ import {BehaviorSubject, map, switchMap} from 'rxjs';
 import {TuiDocCode} from '../code';
 import {TUI_DOC_EXAMPLE_OPTIONS} from './example.options';
 import {TuiDocExampleGetTabsPipe} from './example-get-tabs.pipe';
+import {
+    type TuiDocExampleMainConfig,
+    type TuiDocExampleStateConfig,
+} from './example-config.interface';
 
 @Component({
     selector: 'tui-doc-example',
@@ -64,16 +68,12 @@ import {TuiDocExampleGetTabsPipe} from './example-get-tabs.pipe';
     },
 })
 export class TuiDocExample implements OnChanges {
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly clipboard = inject(Clipboard);
     private readonly alerts = inject(TuiNotificationService);
     private readonly location = inject(WA_LOCATION);
     private readonly copyTexts = inject(TUI_COPY_TEXTS);
     private readonly processContent = inject(TUI_DOC_EXAMPLE_CONTENT_PROCESSOR);
-
-    private readonly rawLoader$$ = new BehaviorSubject<
-        Record<string, TuiRawLoaderContent>
-    >({});
-
     protected readonly fullscreenEnabled = inject(DOCUMENT).fullscreenEnabled;
     protected readonly icons = inject(TUI_DOC_ICONS);
     protected readonly options = inject(TUI_DOC_EXAMPLE_OPTIONS);
@@ -83,17 +83,49 @@ export class TuiDocExample implements OnChanges {
         inject<ReadonlyArray<PolymorpheusContent<TuiContext<string>>>>(
             TUI_DOC_CODE_ACTIONS,
         );
-
     protected readonly route = inject(ActivatedRoute);
 
+    // INPUTS - Configurações do componente
+    public readonly id = input<string | null>(null);
+    public readonly heading = input<PolymorpheusContent>();
+    public readonly description = input<PolymorpheusContent>();
+    public readonly fullsize = input(inject(TUI_DOC_EXAMPLE_OPTIONS).fullsize);
+    public readonly componentName = input<string>(this.location.pathname.slice(1));
+    public readonly component = input<Promise<Type<unknown>>>();
+    public readonly content = input<Record<string, TuiRawLoaderContent>>({});
+
+    // ESTADO E SUBJECTS
+    private readonly rawLoader$$ = new BehaviorSubject<
+        Record<string, TuiRawLoaderContent>
+    >({});
+    protected readonly loading = signal(false);
     protected readonly defaultTabIndex = 0;
     protected readonly defaultTab = this.texts[this.defaultTabIndex];
     protected activeItemIndex = this.defaultTabIndex;
     protected fullscreen = false;
 
-    protected readonly copy = computed(() => this.copyTexts()[0]);
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
 
-    protected readonly loading = signal(false);
+    /** Configuração principal agrupada */
+    private readonly mainConfig = computed<TuiDocExampleMainConfig>(() => ({
+        id: this.id(),
+        heading: this.heading(),
+        description: this.description(),
+        fullsize: this.fullsize(),
+        componentName: this.componentName(),
+        component: this.component(),
+        content: this.content(),
+    }));
+
+    /** Configuração de estado agrupada */
+    protected readonly stateConfig = computed<TuiDocExampleStateConfig>(() => ({
+        loading: this.loading(),
+        fullscreen: this.fullscreen,
+        activeItemIndex: this.activeItemIndex,
+    }));
+
+    // COMPUTED VALUES - Processamento e formatação
+    protected readonly copy = computed(() => this.copyTexts()[0]);
 
     protected readonly processor = toSignal(
         this.rawLoader$$.pipe(
@@ -103,23 +135,13 @@ export class TuiDocExample implements OnChanges {
         {initialValue: {} as unknown as Record<string, string>},
     );
 
-    public readonly id = input<string | null>(null);
-
-    public readonly heading = input<PolymorpheusContent>();
-
-    public readonly description = input<PolymorpheusContent>();
-
-    public readonly fullsize = input(inject(TUI_DOC_EXAMPLE_OPTIONS).fullsize);
-
-    public readonly componentName = input<string>(this.location.pathname.slice(1));
-
-    public readonly component = input<Promise<Type<unknown>>>();
-
-    public readonly content = input<Record<string, TuiRawLoaderContent>>({});
+    // LIFECYCLE HOOKS
 
     public ngOnChanges(): void {
-        this.rawLoader$$.next(this.content());
+        this.rawLoader$$.next(this.mainConfig().content);
     }
+
+    // MÉTODOS PROTEGIDOS - Helpers e utilitários
 
     protected readonly visible = (files: Record<string, string>): boolean =>
         Boolean(this.codeEditor && this.options.codeEditorVisibilityHandler(files));
@@ -127,6 +149,8 @@ export class TuiDocExample implements OnChanges {
     protected getTabTitle(fileName: string): PolymorpheusContent {
         return this.options.tabTitles.get(fileName) || fileName;
     }
+
+    // MÉTODOS PROTEGIDOS - Ações do usuário
 
     protected copyExampleLink(target: EventTarget | null): void {
         this.clipboard.copy((target as HTMLAnchorElement | null)?.href ?? '');
@@ -136,9 +160,10 @@ export class TuiDocExample implements OnChanges {
     }
 
     protected edit(files: Record<string, string>): void {
+        const {componentName, id} = this.mainConfig();
         this.loading.set(true);
         this.codeEditor
-            ?.edit(this.componentName(), this.id() || '', files)
+            ?.edit(componentName, id || '', files)
             .finally(() => this.loading.set(false));
     }
 }
