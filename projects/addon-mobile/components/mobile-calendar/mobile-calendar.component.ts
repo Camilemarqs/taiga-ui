@@ -83,6 +83,11 @@ import {
     TUI_MOBILE_CALENDAR_PROVIDERS,
     TUI_VALUE_STREAM,
 } from './mobile-calendar.providers';
+import {
+    type TuiMobileCalendarMainConfig,
+    type TuiMobileCalendarStateConfig,
+    type TuiMobileCalendarValueConfig,
+} from './mobile-calendar-config.interface';
 
 @Component({
     selector: 'tui-mobile-calendar',
@@ -110,15 +115,86 @@ import {
     },
 })
 export class TuiMobileCalendar implements AfterViewInit {
+    // VIEW CHILDREN E ELEMENTOS
     private readonly yearsScroll = viewChild<CdkVirtualScrollViewport>('yearsScroll');
     private readonly monthsScroll = viewChild<CdkVirtualScrollViewport>('monthsScroll');
-    private readonly today = TuiDay.currentLocal();
-    private activeYear = 0;
-    private activeMonth = 0;
+
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly destroyRef = inject(DestroyRef);
     private readonly doc = inject(DOCUMENT);
     private readonly speed = inject(TUI_ANIMATIONS_SPEED);
     private readonly ngZone = inject(NgZone);
+    protected readonly isIOS = inject(WA_IS_IOS);
+    protected readonly isE2E = inject(WA_IS_E2E);
+    protected readonly icons = inject(TUI_COMMON_ICONS);
+    protected readonly closeWord = inject(TUI_CLOSE_WORD);
+    protected readonly cancelWord = inject(TUI_CANCEL_WORD);
+    protected readonly doneWord = inject(TUI_DONE_WORD);
+    protected readonly monthNames = inject(TUI_MONTHS);
+    protected readonly unorderedWeekDays$ = toObservable(inject(TUI_SHORT_WEEK_DAYS));
+    protected readonly chooseDayOrRangeTexts = inject(TUI_CHOOSE_DAY_OR_RANGE_TEXTS, {
+        optional: true,
+    });
+
+    // CONSTANTES E HELPERS
+    private readonly today = TuiDay.currentLocal();
+
+    // ESTADO INTERNO
+    private activeYear = 0;
+    private activeMonth = 0;
+    protected initialized = false;
+
+    // INPUTS - Configurações do componente
+
+    public readonly single = input(!inject(TUI_CALENDAR_SHEET_OPTIONS).rangeMode);
+    public readonly multi = input(false);
+    public readonly min = input(TUI_FIRST_DAY);
+    public readonly max = input(TUI_LAST_DAY);
+    public readonly disabledItemHandler =
+        input<TuiBooleanHandler<TuiDay>>(TUI_FALSE_HANDLER);
+
+    // OUTPUTS E MODEL
+    public readonly cancel = output();
+    public readonly confirm = output<TuiDay | TuiDayRange | readonly TuiDay[]>();
+    public readonly value = model<TuiDay | TuiDayRange | readonly TuiDay[] | null>(null);
+
+    // ARRAYS DE DADOS
+    protected readonly years = Array.from({length: RANGE}, (_, i) => i + STARTING_YEAR);
+    protected readonly months = Array.from(
+        {length: RANGE * 12},
+        (_, i) =>
+            new TuiMonth(
+                Math.floor(i / MONTHS_IN_YEAR) + STARTING_YEAR,
+                i % MONTHS_IN_YEAR,
+            ),
+    );
+
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
+
+    /** Configuração principal agrupada */
+    protected readonly mainConfig = computed<TuiMobileCalendarMainConfig>(() => ({
+        single: this.single(),
+        multi: this.multi(),
+        min: this.min(),
+        max: this.max(),
+        disabledItemHandler: this.disabledItemHandler(),
+    }));
+
+    /** Configuração de estado agrupada */
+    protected readonly stateConfig = computed<TuiMobileCalendarStateConfig>(() => ({
+        activeYear: this.activeYear,
+        activeMonth: this.activeMonth,
+        initialized: this.initialized,
+    }));
+
+    /** Configuração de valor agrupada */
+    protected readonly valueConfig = computed<TuiMobileCalendarValueConfig>(() => ({
+        value: this.value(),
+        initialYear: this.initialYear(),
+        initialMonth: this.initialMonth(),
+    }));
+
+    // COMPUTED VALUES - Viewport e valores iniciais
     private readonly getYearsViewportSize = computed(
         () => this.yearsScroll()?.getViewportSize() || 0,
     );
@@ -158,52 +234,7 @@ export class TuiMobileCalendar implements AfterViewInit {
         return value.to.month + (value.to.year - STARTING_YEAR) * MONTHS_IN_YEAR;
     });
 
-    protected initialized = false;
-    protected readonly isIOS = inject(WA_IS_IOS);
-    protected readonly isE2E = inject(WA_IS_E2E);
-    protected readonly icons = inject(TUI_COMMON_ICONS);
-    protected readonly closeWord = inject(TUI_CLOSE_WORD);
-    protected readonly cancelWord = inject(TUI_CANCEL_WORD);
-    protected readonly doneWord = inject(TUI_DONE_WORD);
-    protected readonly monthNames = inject(TUI_MONTHS);
-    protected readonly unorderedWeekDays$ = toObservable(inject(TUI_SHORT_WEEK_DAYS));
-    protected readonly chooseDayOrRangeTexts = inject(TUI_CHOOSE_DAY_OR_RANGE_TEXTS, {
-        optional: true,
-    });
-
-    protected readonly years = Array.from({length: RANGE}, (_, i) => i + STARTING_YEAR);
-    protected readonly months = Array.from(
-        {length: RANGE * 12},
-        (_, i) =>
-            new TuiMonth(
-                Math.floor(i / MONTHS_IN_YEAR) + STARTING_YEAR,
-                i % MONTHS_IN_YEAR,
-            ),
-    );
-
-    /**
-     * @deprecated use static DI options instead
-     * ```
-     * tuiCalendarSheetOptionsProvider({rangeMode: boolean})
-     * ```
-     * TODO(v5): delete it
-     */
-    public readonly single = input(!inject(TUI_CALENDAR_SHEET_OPTIONS).rangeMode);
-
-    public readonly multi = input(false);
-
-    public readonly min = input(TUI_FIRST_DAY);
-
-    public readonly max = input(TUI_LAST_DAY);
-
-    public readonly disabledItemHandler =
-        input<TuiBooleanHandler<TuiDay>>(TUI_FALSE_HANDLER);
-
-    public readonly cancel = output();
-
-    public readonly confirm = output<TuiDay | TuiDayRange | readonly TuiDay[]>();
-
-    public readonly value = model<TuiDay | TuiDayRange | readonly TuiDay[] | null>(null);
+    // CONSTRUCTOR - Subscriptions iniciais
 
     constructor() {
         inject(TUI_VALUE_STREAM)
@@ -213,13 +244,17 @@ export class TuiMobileCalendar implements AfterViewInit {
             });
     }
 
-    public ngAfterViewInit(): void {
-        this.activeYear = this.initialYear();
-        this.activeMonth = this.initialMonth();
+    // LIFECYCLE HOOKS
 
-        // Virtual scroll has not yet rendered items even in ngAfterViewInit
+    public ngAfterViewInit(): void {
+        const {initialYear, initialMonth} = this.valueConfig();
+        this.activeYear = initialYear;
+        this.activeMonth = initialMonth;
+
         this.waitScrolledChange();
     }
+
+    // MÉTODOS PÚBLICOS - Manipulação de ano
 
     public setYear(year: number): void {
         if (this.activeYear === year) {
@@ -235,16 +270,20 @@ export class TuiMobileCalendar implements AfterViewInit {
             .subscribe(() => this.scrollToActiveMonth());
     }
 
+    // GETTERS E PROPRIEDADES COMPUTED
+
     protected get yearWidth(): number {
         return this.doc.documentElement.clientWidth / YEARS_IN_ROW;
     }
+
+    // MÉTODOS PROTEGIDOS - Handlers de eventos
 
     protected onClose(): void {
         this.cancel.emit();
     }
 
     protected onConfirm(): void {
-        const value = this.value();
+        const {value} = this.valueConfig();
 
         if (value) {
             this.confirm.emit(value);
@@ -254,9 +293,10 @@ export class TuiMobileCalendar implements AfterViewInit {
     }
 
     protected onDayClick(day: TuiDay): void {
-        const value = this.value();
+        const {value} = this.valueConfig();
+        const {single, multi} = this.mainConfig();
 
-        if (this.single()) {
+        if (single) {
             this.value.set(day);
         } else if (this.isMultiValue(value)) {
             this.value.set(toggleDay(value, day));
@@ -282,7 +322,6 @@ export class TuiMobileCalendar implements AfterViewInit {
     }
 
     protected onMonthChange(month: number): void {
-        // Skipping initial callback where index === 0
         if (!month || this.activeMonth === month) {
             return;
         }
@@ -307,9 +346,14 @@ export class TuiMobileCalendar implements AfterViewInit {
         (max !== null && item.dayAfter(max)) ||
         disabledItemHandler(item);
 
+    // MÉTODOS PRIVADOS - Validação e helpers
+
     private isMultiValue(day: unknown): day is readonly TuiDay[] | undefined {
-        return !(day instanceof TuiDay) && !(day instanceof TuiDayRange) && this.multi();
+        const {multi} = this.mainConfig();
+        return !(day instanceof TuiDay) && !(day instanceof TuiDayRange) && multi;
     }
+
+    // MÉTODOS PRIVADOS - Inicialização e scroll
 
     private updateViewportDimension(): void {
         this.yearsScroll()?.checkViewportSize();
@@ -359,14 +403,11 @@ export class TuiMobileCalendar implements AfterViewInit {
         );
         const click$ = tuiTypedFromEvent(yearsScroll.elementRef.nativeElement, 'click');
 
-        // Refresh activeYear
         yearsScroll
             .elementScrolled()
             .pipe(
-                // Ignore smooth scroll resulting from click on the exact year
                 windowToggle(touchstart$, () => click$),
                 mergeMap((x) => x),
-                // Delay is required to run months scroll in the next frame to prevent flicker
                 delay(0),
                 map(
                     () =>
@@ -383,7 +424,6 @@ export class TuiMobileCalendar implements AfterViewInit {
                 this.scrollToActiveMonth();
             });
 
-        // Smooth scroll to activeYear after scrolling is done
         touchstart$
             .pipe(
                 switchMap(() => touchend$),
@@ -423,7 +463,6 @@ export class TuiMobileCalendar implements AfterViewInit {
             {passive: true},
         );
 
-        // Smooth scroll to the closest month after scrolling is done
         touchstart$
             .pipe(
                 switchMap(() => touchend$),
@@ -458,6 +497,8 @@ export class TuiMobileCalendar implements AfterViewInit {
             this.isE2E ? 'auto' : behavior,
         );
     }
+
+    // MÉTODOS PRIVADOS - Helpers de cálculo
 
     private isYearActive(index: number): boolean {
         return index === this.activeYear;
