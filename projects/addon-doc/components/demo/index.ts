@@ -42,6 +42,12 @@ import {TuiSwitch} from '@taiga-ui/kit/components/switch';
 import {TuiChevron} from '@taiga-ui/kit/directives/chevron';
 import {skip} from 'rxjs';
 
+import {
+    type TuiDocDemoFormConfig,
+    type TuiDocDemoSandboxConfig,
+    type TuiDocDemoThemeConfig,
+} from './demo-config.interface';
+
 const MIN_WIDTH = 160;
 
 @Pipe({name: 'json'})
@@ -84,71 +90,99 @@ export class TuiJsonPipe implements PipeTransform {
     },
 })
 export class TuiDocDemo implements AfterViewInit {
+    // VIEW CHILDREN E ELEMENTOS
     private readonly resizable: Signal<ElementRef<HTMLElement>> = viewChild.required(
         TuiResizable,
         {read: ElementRef},
     );
-
     private readonly content: Signal<ElementRef<HTMLElement>> =
         viewChild.required<ElementRef<HTMLElement>>('content');
-
     private readonly resizer: Signal<ElementRef<HTMLElement>> =
         viewChild.required<ElementRef<HTMLElement>>('resizer');
+    protected readonly template = contentChild(TemplateRef<Record<string, unknown>>);
 
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly el = tuiInjectElement();
     private readonly locationRef = inject(Location);
     private readonly urlSerializer = inject(UrlSerializer);
     private readonly urlStateHandler = inject(TUI_DOC_URL_STATE_HANDLER);
     private readonly darkMode = inject(TUI_DARK_MODE);
+    protected readonly texts = inject(TUI_DOC_DEMO_TEXTS);
 
-    protected readonly template = contentChild(TemplateRef<Record<string, unknown>>);
+    // INPUTS - Configurações do componente
+    public readonly control = input<AbstractControl | null>(null);
+    public readonly sticky = input(true);
 
+    // ESTADO E SIGNALS
     protected readonly rendered = signal(false);
-
-    protected theme = computed(() => (this.dark() ? 'dark' : 'light'));
-
     protected dark = signal(
         tuiCoerceValueIsTrue(this.params.darkMode ?? this.darkMode()),
     );
 
+    // CONFIGURAÇÕES AGRUPADAS - Agrega estados relacionados para lógica interna
+    
+    /** Configuração de tema agrupada */
+    protected readonly themeConfig = computed<TuiDocDemoThemeConfig>(() => ({
+        dark: this.dark(),
+        theme: this.dark() ? 'dark' : 'light',
+    }));
+
+    /** Configuração do sandbox agrupada */
+    protected readonly sandboxConfig = computed<TuiDocDemoSandboxConfig>(() => ({
+        opaque: this.opaque,
+        expanded: this.expanded,
+        sandboxWidth: this.sandboxWidth,
+    }));
+
+    /** Configuração do formulário agrupada */
+    protected readonly formConfig = computed<TuiDocDemoFormConfig>(() => ({
+        updateOn: this.updateOn,
+    }));
+
+    // COMPUTED VALUES - Tema e aparência
+    protected theme = computed(() => this.themeConfig().theme);
+
+    // PROPRIEDADES DO FORMULÁRIO
+    protected testForm?: FormGroup;
+    protected readonly updateOnVariants = ['change', 'blur', 'submit'] as const;
+    protected updateOn: 'blur' | 'change' | 'submit' =
+        this.params.updateOn || this.updateOnVariants[0];
+
+    // PROPRIEDADES DO SANDBOX
+    protected opaque = tuiCoerceValueIsTrue(this.params.sandboxOpaque ?? true);
+    protected expanded = tuiCoerceValueIsTrue(this.params.sandboxExpanded ?? false);
+    protected sandboxWidth = parseInt(this.params.sandboxWidth, 10);
+
+    // SUBSCRIPTIONS
     protected readonly $ = toObservable(this.darkMode)
         .pipe(skip(1), takeUntilDestroyed())
         .subscribe((mode) => this.onModeChange(mode));
 
-    protected testForm?: FormGroup;
-
-    protected readonly updateOnVariants = ['change', 'blur', 'submit'] as const;
-
-    protected updateOn: 'blur' | 'change' | 'submit' =
-        this.params.updateOn || this.updateOnVariants[0];
-
-    protected opaque = tuiCoerceValueIsTrue(this.params.sandboxOpaque ?? true);
-    protected expanded = tuiCoerceValueIsTrue(this.params.sandboxExpanded ?? false);
-    protected sandboxWidth = parseInt(this.params.sandboxWidth, 10);
-    protected readonly texts = inject(TUI_DOC_DEMO_TEXTS);
-
-    public readonly control = input<AbstractControl | null>(null);
-
-    public readonly sticky = input(true);
-
+    // LIFECYCLE HOOKS
+    
     public ngAfterViewInit(): void {
         this.createForm();
-        this.updateWidth(this.sandboxWidth + this.delta);
+        this.updateWidth(this.sandboxConfig().sandboxWidth + this.delta);
         this.rendered.set(true);
     }
 
+    // MÉTODOS PROTEGIDOS - Eventos de UI
+    
     protected onResize(): void {
         this.updateWidth();
         this.onMouseUp();
     }
 
     protected onMouseUp(): void {
-        this.updateUrl({sandboxWidth: this.sandboxWidth});
+        this.updateUrl({sandboxWidth: this.sandboxConfig().sandboxWidth});
     }
 
     protected onModeChange(darkMode: boolean): void {
         this.dark.set(darkMode);
-        this.updateUrl({sandboxWidth: this.sandboxWidth, darkMode});
+        this.updateUrl({
+            sandboxWidth: this.sandboxConfig().sandboxWidth,
+            darkMode,
+        });
     }
 
     protected toggleDetails(): void {
@@ -167,6 +201,8 @@ export class TuiDocDemo implements AfterViewInit {
         this.createForm();
     }
 
+    // MÉTODOS PROTEGIDOS - Manipulação de dimensões
+    
     protected updateWidth(width = NaN): void {
         if (!this.resizer() || !this.resizable() || !this.content()) {
             return;
@@ -182,6 +218,8 @@ export class TuiDocDemo implements AfterViewInit {
         this.sandboxWidth = validated;
     }
 
+    // MÉTODOS PRIVADOS - Helpers e utilitários
+    
     private get delta(): number {
         return this.resizable() && this.content()
             ? this.resizable().nativeElement.clientWidth -
@@ -193,6 +231,8 @@ export class TuiDocDemo implements AfterViewInit {
         return this.getUrlTree().queryParams;
     }
 
+    // MÉTODOS PRIVADOS - Manipulação de URL
+    
     private updateUrl(params: TuiDemoParams): void {
         const tree = this.getUrlTree();
         const {queryParams} = tree;
@@ -207,18 +247,20 @@ export class TuiDocDemo implements AfterViewInit {
         this.locationRef.go(this.urlStateHandler(tree));
     }
 
+    private getUrlTree(): UrlTree {
+        return this.urlSerializer.parse(this.locationRef.path());
+    }
+
+    // MÉTODOS PRIVADOS - Manipulação de formulário
+    
     private createForm(): void {
         const control = this.control();
 
         if (control) {
             this.testForm = new FormGroup(
                 {testValue: control},
-                {updateOn: this.updateOn},
+                {updateOn: this.formConfig().updateOn},
             );
         }
-    }
-
-    private getUrlTree(): UrlTree {
-        return this.urlSerializer.parse(this.locationRef.path());
     }
 }
