@@ -63,6 +63,10 @@ import {
     TUI_INPUT_CARD_GROUP_TEXTS,
     TUI_INPUT_CARD_GROUP_TEXTS_PROVIDER,
 } from './input-card-group.providers';
+import {
+    type TuiInputCardGroupMainConfig,
+    type TuiInputCardGroupStateConfig,
+} from './input-card-group-config.interface';
 
 export interface TuiCard {
     card: string;
@@ -112,27 +116,77 @@ export class TuiInputCardGroup
     extends TuiControl<TuiCard | null>
     implements TuiDataListHost<Partial<TuiCard>>
 {
+    // VIEW CHILDREN E ELEMENTOS
     private readonly inputCard = viewChild<ElementRef<HTMLInputElement>>('inputCard');
     private readonly inputExpire = viewChild<ElementRef<HTMLInputElement>>('inputExpire');
     private readonly inputCVC = viewChild<ElementRef<HTMLInputElement>>('inputCVC');
+
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly doc = inject(DOCUMENT);
     private readonly isServer = isPlatformServer(inject(PLATFORM_ID));
-    private readonly focus$ = new Subject<void>();
-    private readonly expirePrefilled = signal(false);
     private readonly paymentSystems = inject(TUI_PAYMENT_SYSTEM_ICONS);
     private readonly options = inject(TUI_INPUT_CARD_GROUP_OPTIONS);
     private readonly el = tuiInjectElement();
     private readonly hover = tuiHovered();
     private readonly focusedIn = tuiFocusedIn(this.el);
+    protected readonly isMobile = inject(WA_IS_MOBILE);
+    protected readonly isWebkit = inject(WA_IS_WEBKIT);
+    protected readonly dropdown = inject(TuiDropdownDirective);
+    protected readonly icons = inject(TUI_COMMON_ICONS);
+    protected readonly textfield = inject(TUI_TEXTFIELD_OPTIONS);
+    protected readonly texts = inject(TUI_INPUT_CARD_GROUP_TEXTS);
+    protected readonly open = inject(TuiDropdownOpen).open;
 
-    protected readonly cvcMask = computed(() => TUI_MASK_CVC(this.codeLength() ?? 3));
-    protected readonly cvcHidden = this.options.cvcHidden;
-    protected readonly cvcPlaceholder = computed((length = this.codeLength()) =>
-        length ? '0'.repeat(length) : this.options.cvcPlaceholder,
+    // ESTADO E SIGNALS
+    private readonly focus$ = new Subject<void>();
+    private readonly expirePrefilled = signal(false);
+
+    // INPUTS - Configurações do componente
+    public readonly placeholder = input(this.options.placeholder);
+    public readonly inputs = input(this.options.inputs);
+    public readonly cardValidator = input(this.options.cardValidator);
+    public readonly icon = input<PolymorpheusContent>('');
+    public readonly id = input(tuiGenerateId());
+    public readonly codeLength = input<3 | 4>();
+    public readonly binChange = output<string | null>();
+
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
+
+    /** Configuração principal agrupada */
+    private readonly mainConfig = computed<TuiInputCardGroupMainConfig>(() => ({
+        placeholder: this.placeholder(),
+        inputs: this.inputs(),
+        cardValidator: this.cardValidator(),
+        icon: this.icon(),
+        id: this.id(),
+        codeLength: this.codeLength(),
+    }));
+
+    /** Estado interno agrupado */
+    private readonly stateConfig = computed<TuiInputCardGroupStateConfig>(() => ({
+        expirePrefilled: this.expirePrefilled(),
+    }));
+
+    // COMPUTED VALUES - Dados do cartão
+    protected readonly card = computed(() => this.value()?.card || '');
+    protected readonly expire = computed(() => this.value()?.expire || '');
+    protected readonly cvc = computed(() => this.value()?.cvc || '');
+
+    // COMPUTED VALUES - Máscaras e placeholders
+    protected readonly cvcMask = computed(() =>
+        TUI_MASK_CVC(this.mainConfig().codeLength ?? 3),
     );
+    protected readonly cvcHidden = this.options.cvcHidden;
+    protected readonly cvcPlaceholder = computed(
+        (length = this.mainConfig().codeLength) =>
+            length ? '0'.repeat(length) : this.options.cvcPlaceholder,
+    );
+    protected readonly maskCard = TUI_MASK_CARD;
+    protected readonly maskExpire = TUI_MASK_EXPIRE;
 
+    // COMPUTED VALUES - Validação e estado preenchido
     protected readonly cvcPrefilled = computed(
-        () => !this.inputs().cvc || !!this.cvc().match(TUI_NON_DIGIT_REGEXP),
+        () => !this.mainConfig().inputs.cvc || !!this.cvc().match(TUI_NON_DIGIT_REGEXP),
     );
 
     protected readonly cardPrefilled = computed(
@@ -140,41 +194,18 @@ export class TuiInputCardGroup
     );
 
     protected readonly focusable = computed(
-        () => this.cardValidator()(this.card()) || this.cardPrefilled(),
+        () => this.mainConfig().cardValidator(this.card()) || this.cardPrefilled(),
     );
 
     protected readonly expireFocusable = computed(
-        () => this.focusable() && !this.expirePrefilled(),
+        () => this.focusable() && !this.stateConfig().expirePrefilled,
     );
 
-    protected readonly isMobile = inject(WA_IS_MOBILE);
-    protected readonly isWebkit = inject(WA_IS_WEBKIT);
-    protected readonly dropdown = inject(TuiDropdownDirective);
-    protected readonly maskCard = TUI_MASK_CARD;
-    protected readonly maskExpire = TUI_MASK_EXPIRE;
-    protected readonly icons = inject(TUI_COMMON_ICONS);
-    protected readonly textfield = inject(TUI_TEXTFIELD_OPTIONS);
-    protected readonly texts = inject(TUI_INPUT_CARD_GROUP_TEXTS);
-    protected readonly open = inject(TuiDropdownOpen).open;
-    protected readonly $ = this.isWebkit
-        ? this.focus$
-              .pipe(
-                  switchMap(() => timer(100)),
-                  takeUntilDestroyed(),
-              )
-              .subscribe(() => (this.expire() ? this.focusCVC() : this.focusExpire()))
-        : EMPTY;
-
-    protected readonly card = computed(() => this.value()?.card || '');
-    protected readonly expire = computed(() => this.value()?.expire || '');
-    protected readonly cvc = computed(() => this.value()?.cvc || '');
+    // COMPUTED VALUES - Aparência e foco
     protected readonly m = tuiAppearanceMode(this.mode);
-    protected readonly appearance = tuiAppearance(
-        inject(TUI_TEXTFIELD_OPTIONS).appearance,
-    );
+    protected readonly appearance = tuiAppearance(this.textfield.appearance);
 
     protected readonly state: Signal<unknown> = tuiAppearanceState(
-        // eslint-disable-next-line no-nested-ternary
         computed(() => (this.disabled() ? 'disabled' : this.hover() ? 'hover' : null)),
     );
 
@@ -190,22 +221,27 @@ export class TuiInputCardGroup
         () => this.textfield.cleaner() && this.card() && this.interactive(),
     );
 
+    // COMPUTED VALUES - BIN e conteúdo do cartão
     protected readonly bin = computed(() =>
         this.card().length < 6 ? null : this.card().slice(0, 6),
     );
 
     protected readonly content = computed<PolymorpheusContent>(
         (system = tuiGetPaymentSystem(this.card())) =>
-            this.icon() || (system && this.paymentSystems[system]),
+            this.mainConfig().icon || (system && this.paymentSystems[system]),
     );
 
-    public readonly placeholder = input(this.options.placeholder);
-    public readonly inputs = input(this.options.inputs);
-    public readonly cardValidator = input(this.options.cardValidator);
-    public readonly icon = input<PolymorpheusContent>('');
-    public readonly id = input(tuiGenerateId());
-    public readonly codeLength = input<3 | 4>();
-    public readonly binChange = output<string | null>();
+    // SUBSCRIPTIONS
+    protected readonly $ = this.isWebkit
+        ? this.focus$
+              .pipe(
+                  switchMap(() => timer(100)),
+                  takeUntilDestroyed(),
+              )
+              .subscribe(() => (this.expire() ? this.focusCVC() : this.focusExpire()))
+        : EMPTY;
+
+    // MÉTODOS PÚBLICOS - Implementação de TuiControl
 
     public override writeValue(value: TuiCard | null): void {
         const bin = this.bin();
@@ -215,7 +251,6 @@ export class TuiInputCardGroup
         this.updateBin(bin);
         this.expirePrefilled.set(!!this.expire() && this.cardPrefilled());
 
-        // Programmatic setting of expire input value breaks autofill in Chrome
         const inputExpire = this.inputExpire();
 
         if (
@@ -235,12 +270,14 @@ export class TuiInputCardGroup
         (activeElement as HTMLElement | null)?.focus({preventScroll: true});
     }
 
+    // MÉTODOS PÚBLICOS - Foco e interação
+
     public focusCard(): void {
         this.inputCard()?.nativeElement.focus({preventScroll: true});
     }
 
     public focusExpire(): void {
-        if (this.inputs().expire) {
+        if (this.mainConfig().inputs.expire) {
             this.inputExpire()?.nativeElement.focus({preventScroll: true});
         } else {
             this.inputCVC()?.nativeElement.focus({preventScroll: true});
@@ -278,6 +315,8 @@ export class TuiInputCardGroup
         this.onChange(null);
     }
 
+    // MÉTODOS PROTEGIDOS - Handlers de eventos
+
     protected get cardCollapsed(): boolean {
         return this.focusable() && !tuiIsFocused(this.inputCard()?.nativeElement);
     }
@@ -297,9 +336,12 @@ export class TuiInputCardGroup
         this.updateProperty(parsed, 'card');
         this.updateBin(bin);
 
-        if (this.cardValidator()(this.card()) && !this.expire() && this.inputExpire()) {
+        if (
+            this.mainConfig().cardValidator(this.card()) &&
+            !this.expire() &&
+            this.inputExpire()
+        ) {
             this.focusExpire();
-            // Safari autofill focus jerk workaround
             this.focus$.next();
         }
     }
@@ -307,7 +349,6 @@ export class TuiInputCardGroup
     protected onExpireChange(expire: string): void {
         this.updateProperty(expire, 'expire');
 
-        // MM/YY
         if (Number(this.inputExpire()?.nativeElement.selectionStart) === 5) {
             this.focusCVC();
         }
