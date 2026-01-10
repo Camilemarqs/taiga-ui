@@ -27,6 +27,12 @@ import {type PolymorpheusContent, PolymorpheusOutlet} from '@taiga-ui/polymorphe
 import {combineLatest, filter} from 'rxjs';
 
 import {TuiLineDaysChartHint} from './line-days-chart-hint.directive';
+import {
+    type TuiLineDaysChartDataConfig,
+    type TuiLineDaysChartDimensionsConfig,
+    type TuiLineDaysChartFormattingConfig,
+    type TuiLineDaysChartStylingConfig,
+} from './line-days-chart-config.interface';
 
 const DUMMY: TuiPoint = [NaN, NaN];
 
@@ -48,6 +54,7 @@ const DUMMY: TuiPoint = [NaN, NaN];
     },
 })
 export class TuiLineDaysChart implements AfterViewInit {
+    // SERVIÇOS E DEPENDÊNCIAS INJETADAS
     private readonly destroyRef = inject(DestroyRef);
     private readonly zone = inject(NgZone);
     private readonly hovered$ = inject(TuiHoveredService);
@@ -56,46 +63,23 @@ export class TuiLineDaysChart implements AfterViewInit {
         optional: true,
     });
 
-    private readonly brokenMonths = computed(() => {
-        const value = this.value();
-        const offset = (value[0]?.[0].day || 1) - 1;
-        const start = value[0]?.[0];
-        const end = value[value.length - 1]?.[0];
+    // INPUTS - Agrupados por responsabilidade
 
-        return Array.from(
-            {length: start && end ? TuiMonth.lengthBetween(start, end) + 1 : 0},
-            (_, i) => i + (start?.month || 0) + (start?.year || 0) * 12,
-        )
-            .map((absoluteMonth) =>
-                value
-                    .map<TuiPoint | null>(([{month, year}, y], index) =>
-                        month + year * 12 === absoluteMonth ? [index + offset, y] : null,
-                    )
-                    .filter(tuiIsPresent),
-            )
-            .map((month, index, array) =>
-                index === array.length - 1
-                    ? month
-                    : [
-                          ...month,
-                          array[index + 1]?.find((day) => !Number.isNaN(day[1])) || DUMMY,
-                      ],
-            );
-    });
-
-    public readonly charts = viewChildren(TuiLineChart);
+    // Dimensões e posicionamento
     public readonly y = input(0);
     public readonly height = input(0);
+
+    // Estilo e aparência
     public readonly smoothingFactor = input(this.options.smoothingFactor);
+    public readonly dots = input(this.options.dots);
+
+    // Formatação de valores (hints)
+    public readonly xStringify = input<TuiStringHandler<TuiDay> | null>(null);
+    public readonly yStringify = input<TuiStringHandler<number> | null>(null);
     public readonly hintContent =
         input<PolymorpheusContent<TuiContext<[TuiDay, number]>>>();
 
-    public readonly xStringify = input<TuiStringHandler<TuiDay> | null>(null);
-    public readonly yStringify = input<TuiStringHandler<number> | null>(null);
-    public readonly dots = input(this.options.dots);
-
-    public zIndex = 0;
-
+    // Dados do gráfico
     public value = input<
         ReadonlyArray<[TuiDay, number]>,
         ReadonlyArray<[TuiDay, number]>
@@ -124,10 +108,75 @@ export class TuiLineDaysChart implements AfterViewInit {
         },
     });
 
+    // ESTADO E VIEW CHILDREN
+    public readonly charts = viewChildren(TuiLineChart);
+    public zIndex = 0;
+
+    // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
+
+    /** Configuração de dimensões agrupada */
+    private readonly dimensionsConfig = computed<TuiLineDaysChartDimensionsConfig>(
+        () => ({
+            y: this.y(),
+            height: this.height(),
+        }),
+    );
+
+    /** Configuração de estilo agrupada */
+    private readonly stylingConfig = computed<TuiLineDaysChartStylingConfig>(() => ({
+        smoothingFactor: this.smoothingFactor(),
+        dots: this.dots(),
+    }));
+
+    /** Configuração de formatação agrupada */
+    private readonly formattingConfig = computed<TuiLineDaysChartFormattingConfig>(
+        () => ({
+            xStringify: this.xStringify(),
+            yStringify: this.yStringify(),
+            hintContent: this.hintContent(),
+        }),
+    );
+
+    /** Configuração de dados agrupada */
+    private readonly dataConfig = computed<TuiLineDaysChartDataConfig>(() => ({
+        value: this.value(),
+    }));
+
+    // COMPUTED VALUES - Cálculos e transformações
+
+    private readonly brokenMonths = computed(() => {
+        const {value} = this.dataConfig();
+        const offset = (value[0]?.[0].day || 1) - 1;
+        const start = value[0]?.[0];
+        const end = value[value.length - 1]?.[0];
+
+        return Array.from(
+            {length: start && end ? TuiMonth.lengthBetween(start, end) + 1 : 0},
+            (_, i) => i + (start?.month || 0) + (start?.year || 0) * 12,
+        )
+            .map((absoluteMonth) =>
+                value
+                    .map<TuiPoint | null>(([{month, year}, y], index) =>
+                        month + year * 12 === absoluteMonth ? [index + offset, y] : null,
+                    )
+                    .filter(tuiIsPresent),
+            )
+            .map((month, index, array) =>
+                index === array.length - 1
+                    ? month
+                    : [
+                          ...month,
+                          array[index + 1]?.find((day) => !Number.isNaN(day[1])) || DUMMY,
+                      ],
+            );
+    });
+
     public hint = computed<
         | PolymorpheusContent<TuiContext<[TuiDay, number]>>
         | PolymorpheusContent<TuiContext<readonly TuiPoint[]>>
-    >(() => this.hintDirective?.hint() ?? this.hintContent());
+    >(() => this.hintDirective?.hint() ?? this.formattingConfig().hintContent);
+
+    // LIFECYCLE HOOKS
 
     public ngAfterViewInit(): void {
         combineLatest([tuiLineChartDrivers(this.charts()), this.hovered$])
@@ -141,14 +190,28 @@ export class TuiLineDaysChart implements AfterViewInit {
             });
     }
 
+    // GETTERS E PROPRIEDADES COMPUTED - Acessórios e helpers
+
+    protected get months(): ReadonlyArray<readonly TuiPoint[]> {
+        const {value} = this.dataConfig();
+        return value.length ? this.brokenMonths() : [];
+    }
+
+    protected get firstWidth(): number {
+        const {value} = this.dataConfig();
+        return this.months.length * (value[0]?.[0].daysCount || 0);
+    }
+
+    // MÉTODOS DE INTERAÇÃO - Hover e eventos
+
     public onHovered(day: TuiDay | number): void {
         if (tuiIsNumber(day)) {
             this.charts().forEach((chart) => chart.onHovered(NaN));
-
             return;
         }
 
-        const start = this.value()[0]?.[0];
+        const {value} = this.dataConfig();
+        const start = value[0]?.[0];
         const index = start && day ? TuiMonth.lengthBetween(start, day) : 0;
         const x = start && day ? TuiDay.lengthBetween(start, day) + start.day - 1 : 0;
         const current = this.charts()[index];
@@ -180,36 +243,18 @@ export class TuiLineDaysChart implements AfterViewInit {
     public getContext(index: number, {value}: TuiLineChart): unknown {
         const x = value()[index]?.[0] || 0;
         const day = this.getDay(x);
+        const {value: chartValue} = this.dataConfig();
 
         return this.hintDirective && day
             ? this.hintDirective.getContext(day)
-            : this.getHintContext(x, this.value());
+            : this.getHintContext(x, chartValue);
     }
 
-    protected get months(): ReadonlyArray<readonly TuiPoint[]> {
-        return this.value().length ? this.brokenMonths() : [];
-    }
-
-    protected get firstWidth(): number {
-        return this.months.length * (this.value()[0]?.[0].daysCount || 0);
-    }
-
-    protected getHintContext(
-        x: number,
-        value: ReadonlyArray<[TuiDay, number]>,
-    ): [TuiDay, number] | null {
-        return value[x - (value[0]?.[0]?.day || 0) + 1] ?? null;
-    }
-
-    protected readonly daysStringify: TuiStringHandler<number> = (index) => {
-        const day = this.getDay(index);
-        const xStringify = this.xStringify();
-
-        return xStringify && day ? xStringify(day) : '';
-    };
+    // MÉTODOS DE CÁLCULO GEOMÉTRICO - Posicionamento e dimensões
 
     protected getX(index: number): number {
-        const start = this.value()[0]?.[0];
+        const {value} = this.dataConfig();
+        const start = value[0]?.[0];
         const current = this.getDay(index);
         const months = start && current ? TuiMonth.lengthBetween(start, current) : 0;
         const offset = months * (current?.daysCount || 0);
@@ -222,8 +267,25 @@ export class TuiLineDaysChart implements AfterViewInit {
     }
 
     private getDay(index: number): TuiDay | undefined {
-        const start = this.value()[0]?.[0];
+        const {value} = this.dataConfig();
+        const start = value[0]?.[0];
 
-        return this.value()[index - (start?.day || 0) + 1]?.[0];
+        return value[index - (start?.day || 0) + 1]?.[0];
     }
+
+    // MÉTODOS DE HINTS - Formatação e contexto
+
+    protected getHintContext(
+        x: number,
+        value: ReadonlyArray<[TuiDay, number]>,
+    ): [TuiDay, number] | null {
+        return value[x - (value[0]?.[0]?.day || 0) + 1] ?? null;
+    }
+
+    protected readonly daysStringify: TuiStringHandler<number> = (index) => {
+        const day = this.getDay(index);
+        const {xStringify} = this.formattingConfig();
+
+        return xStringify && day ? xStringify(day) : '';
+    };
 }

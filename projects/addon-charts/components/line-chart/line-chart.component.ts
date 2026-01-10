@@ -42,9 +42,7 @@ import {
     },
 })
 export class TuiLineChart {
-    // ============================================================================
     // SERVIÇOS E DEPENDÊNCIAS INJETADAS
-    // ============================================================================
     private readonly options = inject(TUI_LINE_CHART_OPTIONS);
     private readonly autoId = tuiGenerateId();
     private readonly resize = toSignal(
@@ -57,9 +55,7 @@ export class TuiLineChart {
     protected readonly hintDirective = inject(TuiLineChartHint, {optional: true});
     protected readonly hintOptions = inject(TuiChartHint, {optional: true});
 
-    // ============================================================================
     // INPUTS - Agrupados por responsabilidade
-    // ============================================================================
 
     // Dimensões e posicionamento
     public readonly x = input(0);
@@ -81,16 +77,12 @@ export class TuiLineChart {
         transform: (value) => value.filter((item) => !item.some(Number.isNaN)),
     });
 
-    // ============================================================================
     // ESTADO E INTERAÇÃO
-    // ============================================================================
     public readonly hovered = signal<number>(NaN);
     public readonly drivers = viewChildren(TuiHintHover);
     public readonly drivers$ = toObservable(this.drivers);
 
-    // ============================================================================
     // CONFIGURAÇÕES AGRUPADAS - Agrega inputs relacionados para lógica interna
-    // ============================================================================
 
     /** Configuração de dimensões agrupada */
     private readonly dimensionsConfig = computed<TuiChartDimensionsConfig>(() => ({
@@ -118,9 +110,7 @@ export class TuiLineChart {
         value: this.value(),
     }));
 
-    // ============================================================================
     // COMPUTED VALUES - SVG e cálculos de renderização
-    // ============================================================================
 
     private readonly box = computed(
         () =>
@@ -161,9 +151,7 @@ export class TuiLineChart {
             : this.d();
     });
 
-    // ============================================================================
     // GETTERS E PROPRIEDADES COMPUTED - Acessórios e helpers
-    // ============================================================================
 
     protected get hintContent(): PolymorpheusContent<TuiLineChartHintContext<TuiPoint>> {
         return this.hintOptions?.content() || '';
@@ -195,9 +183,7 @@ export class TuiLineChart {
         return this.dataConfig().value.length === 1;
     }
 
-    // ============================================================================
     // MÉTODOS DE INTERAÇÃO - Hover e eventos do mouse
-    // ============================================================================
 
     public onHovered(index: number): void {
         this.hovered.set(index);
@@ -217,9 +203,7 @@ export class TuiLineChart {
         }
     }
 
-    // ============================================================================
     // MÉTODOS DE CÁLCULO GEOMÉTRICO - Posicionamento e dimensões
-    // ============================================================================
 
     protected getX(index: number): number {
         const {value} = this.dataConfig();
@@ -261,9 +245,7 @@ export class TuiLineChart {
             : this.getX(index + 1) - this.getX(index);
     }
 
-    // ============================================================================
     // MÉTODOS DE HINTS - Formatação e contexto
-    // ============================================================================
 
     protected getHintId(index: number): string {
         return `${this.autoId}_${index}`;
@@ -277,7 +259,6 @@ export class TuiLineChart {
     }
 
     protected getHovered(hovered: number | null): TuiPoint | null {
-        // This checks for NaN and null too since async pipe returns null before first item
         const {value} = this.dataConfig();
         return tuiIsPresent(hovered) && Number.isInteger(hovered)
             ? (value[hovered] ?? null)
