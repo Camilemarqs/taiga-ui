@@ -12,15 +12,9 @@ import {type TuiCheckboxRowDirective} from './checkbox-row.directive';
 export class TuiTableControlDirective<T> extends TuiControl<readonly T[]> {
     private readonly children = signal<ReadonlyArray<TuiCheckboxRowDirective<T>>>([]);
 
-    public readonly checked: Signal<boolean> = computed(
-        () =>
-            !!this.children().length &&
-            this.children().every((i) => this.value().includes(i.tuiCheckboxRow())),
-    );
+    public readonly checked: Signal<boolean> = computed(() => this.isAllChecked());
 
-    public readonly indeterminate: Signal<boolean> = computed(
-        () => !!this.value().length && !this.checked(),
-    );
+    public readonly indeterminate: Signal<boolean> = computed(() => this.hasIndeterminateState());
 
     public toggleAll(): void {
         this.onChange(
@@ -30,5 +24,18 @@ export class TuiTableControlDirective<T> extends TuiControl<readonly T[]> {
 
     public process(checkbox: TuiCheckboxRowDirective<T>): void {
         this.children.update((children) => tuiArrayToggle(children, checkbox));
+    }
+
+    private isAllChecked(): boolean {
+        const childrenList = this.children();
+        if (!childrenList.length) {
+            return false;
+        }
+        const currentValue = this.value();
+        return childrenList.every((item) => currentValue.includes(item.tuiCheckboxRow()));
+    }
+
+    private hasIndeterminateState(): boolean {
+        return !!this.value().length && !this.checked();
     }
 }
