@@ -26,16 +26,22 @@ export default class TuiRoutableDialog {
     constructor() {
         const {dialog} = this.route.snapshot.data;
 
-        from(isClass(dialog) ? of(dialog) : dialog().then((m: any) => m.default ?? m))
+        from(
+            isClass(dialog)
+                ? of(dialog)
+                : dialog().then(
+                      (m: {default?: Type<unknown>} & Type<unknown>) => m.default ?? m,
+                  ),
+        )
             .pipe(
                 /**
                  * All portal hosts are created only after the first render
                  * See `@if (top()) {...}` condition in `tui-root`
                  */
                 delay(0),
-                switchMap((dialog: any) =>
+                switchMap((dialog: Type<unknown>) =>
                     this.dialog.open(
-                        new PolymorpheusComponent<Type<any>>(dialog, this.injector),
+                        new PolymorpheusComponent<Type<unknown>>(dialog, this.injector),
                         this.route.snapshot.data['dialogOptions'],
                     ),
                 ),
