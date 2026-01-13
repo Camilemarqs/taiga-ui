@@ -7,25 +7,30 @@ import {
     type Type,
 } from '@angular/core';
 
-/**
- * Content for tuiOption component
- */
-export const TUI_OPTION_CONTENT = new InjectionToken<Type<any>>(
-    ngDevMode ? 'TUI_OPTION_CONTENT' : '',
+export interface TuiOptionContent {
+    // Define shared behaviors here if needed in the future
+}
+
+export const TUI_OPTION_CONTENT =
+    new InjectionToken<Type<TuiOptionContent>>(
+        ngDevMode ? 'TUI_OPTION_CONTENT' : '',
 );
 
-export function tuiAsOptionContent(useValue: Type<any>): Provider {
+export function tuiAsOptionContent(
+    useValue: Type<TuiOptionContent>,
+): Provider {
     return {provide: TUI_OPTION_CONTENT, useValue};
 }
 
 @Directive()
 export class TuiWithOptionContent {
     @ContentChild(TUI_OPTION_CONTENT, {descendants: true})
-    protected readonly local: Type<any> | null = null;
+    protected readonly local: Type<TuiOptionContent> | null = null;
 
-    protected readonly global = inject<Type<any>>(TUI_OPTION_CONTENT, {optional: true});
+    protected readonly global =
+        inject<Type<TuiOptionContent>>(TUI_OPTION_CONTENT, {optional: true});
 
-    public get content(): Type<any> | null {
+    public get content(): Type<TuiOptionContent> | null {
         return this.global ?? this.local;
     }
 }
