@@ -13,8 +13,8 @@ import {
 @Injectable({
     providedIn: 'root',
 })
-export class TuiMobileDialogService extends TuiModalService<
-    TuiMobileDialogOptions<any>,
+export class TuiMobileDialogService<I = unknown> extends TuiModalService<
+    TuiMobileDialogOptions<I>,
     number
 > {
     protected readonly options = inject(TUI_MOBILE_DIALOG_OPTIONS);
@@ -22,9 +22,9 @@ export class TuiMobileDialogService extends TuiModalService<
 
     public override open(
         content: PolymorpheusContent<
-            TuiPortalContext<TuiMobileDialogOptions<any>, number>
+            TuiPortalContext<TuiMobileDialogOptions<I>, number>
         >,
-        options: Partial<TuiMobileDialogOptions<any>> = {},
+        options: Partial<TuiMobileDialogOptions<I>> = {},
     ): Observable<number> {
         return super.open(content, options);
     }
