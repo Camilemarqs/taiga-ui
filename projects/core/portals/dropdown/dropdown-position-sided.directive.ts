@@ -1,6 +1,6 @@
 import {Directive, inject, input} from '@angular/core';
 import {EMPTY_CLIENT_RECT} from '@taiga-ui/cdk/constants';
-import {tuiAsPositionAccessor, TuiPositionAccessor} from '@taiga-ui/core/classes';
+import {tuiAsPositionAccessor, type TuiPositionAccessor} from '@taiga-ui/core/classes';
 import {TUI_VIEWPORT} from '@taiga-ui/core/tokens';
 import {type TuiPoint} from '@taiga-ui/core/types';
 
@@ -11,7 +11,7 @@ import {TuiDropdownPosition} from './dropdown-position.directive';
     selector: '[tuiDropdownSided]',
     providers: [TuiDropdownPosition, tuiAsPositionAccessor(TuiDropdownPositionSided)],
 })
-export class TuiDropdownPositionSided extends TuiPositionAccessor {
+export class TuiDropdownPositionSided implements TuiPositionAccessor {
     private readonly options = inject(TUI_DROPDOWN_OPTIONS);
     private readonly viewport = inject(TUI_VIEWPORT);
     private readonly vertical = inject(TuiDropdownPosition);
