@@ -6,7 +6,7 @@ import {EMPTY_CLIENT_RECT} from '@taiga-ui/cdk/constants';
 import {TuiActiveZone} from '@taiga-ui/cdk/directives/active-zone';
 import {tuiTypedFromEvent, tuiZoneOptimized} from '@taiga-ui/cdk/observables';
 import {tuiGetActualTarget, tuiPointToClientRect} from '@taiga-ui/cdk/utils/dom';
-import {tuiAsDriver, tuiAsRectAccessor, TuiRectAccessor} from '@taiga-ui/core/classes';
+import {tuiAsDriver, tuiAsRectAccessor, type TuiRectAccessor} from '@taiga-ui/core/classes';
 import {filter, merge} from 'rxjs';
 
 import {TuiDropdownDriver} from './dropdown.driver';
@@ -26,7 +26,7 @@ import {TuiDropdownDriver} from './dropdown.driver';
         '(longtap)': 'onContextMenu($event.detail.clientX, $event.detail.clientY)',
     },
 })
-export class TuiDropdownContext extends TuiRectAccessor {
+export class TuiDropdownContext implements TuiRectAccessor {
     private readonly isTouch = inject(WA_IS_TOUCH);
     private currentRect = EMPTY_CLIENT_RECT;
 
