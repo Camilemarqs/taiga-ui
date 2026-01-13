@@ -8,7 +8,7 @@ import {
     tuiInjectElement,
     tuiIsElement,
 } from '@taiga-ui/cdk/utils/dom';
-import {tuiAsDriver, TuiDriver} from '@taiga-ui/core/classes';
+import {tuiAsDriver, type TuiDriver} from '@taiga-ui/core/classes';
 import {
     delay,
     distinctUntilChanged,
@@ -16,6 +16,7 @@ import {
     fromEvent,
     map,
     merge,
+    Observable,
     of,
     share,
     startWith,
@@ -35,7 +36,7 @@ import {TuiDropdownOpen} from './dropdown-open.directive';
         '(click.capture)': 'onClick($event)',
     },
 })
-export class TuiDropdownHover extends TuiDriver {
+export class TuiDropdownHover extends Observable<boolean> implements TuiDriver {
     private readonly dropdownHost = contentChild('tuiDropdownHost', {
         descendants: true,
         read: ElementRef,
