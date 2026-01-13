@@ -16,18 +16,18 @@ import {TUI_ITEMS_HANDLERS, type TuiItemsHandlers, TuiTitle} from '@taiga-ui/cor
 })
 export class TuiDocItemsHandlers implements TuiItemsHandlers<unknown> {
     protected readonly options = inject(TUI_ITEMS_HANDLERS);
-    protected readonly stringifyVariants: Array<TuiStringHandler<any>> = [
-        (x) => x.name,
+    protected readonly stringifyVariants: Array<TuiStringHandler<unknown>> = [
+        (x) => (x as {name: string}).name,
         (x) => String(x),
-        (x) => x.id,
+        (x) => (x as {id: string}).id,
     ];
 
-    protected readonly identityMatcherVariants: ReadonlyArray<TuiIdentityMatcher<any>> = [
-        (controlValue, item) => controlValue.id === item.id,
+    protected readonly identityMatcherVariants: ReadonlyArray<TuiIdentityMatcher<unknown>> = [
+        (controlValue, item) => (controlValue as {id: unknown}).id === (item as {id: unknown}).id,
         this.options.identityMatcher(),
     ];
 
-    protected readonly falseHandler: TuiBooleanHandler<any> = TUI_FALSE_HANDLER;
+    protected readonly falseHandler: TuiBooleanHandler<unknown> = TUI_FALSE_HANDLER;
 
     public readonly hiddenOptions = input<
         Array<string | keyof TuiItemsHandlers<unknown>>
@@ -37,7 +37,7 @@ export class TuiDocItemsHandlers implements TuiItemsHandlers<unknown> {
     public readonly disabledItemHandler = signal(this.falseHandler);
     public readonly identityMatcher = signal(this.identityMatcherVariants[0]!);
 
-    public readonly providedDisabledItemHandler = input<TuiBooleanHandler<any>>(
+    public readonly providedDisabledItemHandler = input<TuiBooleanHandler<unknown>>(
         this.disabledItemHandler(),
         {alias: 'disabledItemHandler'},
     );
