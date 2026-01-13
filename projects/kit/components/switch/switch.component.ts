@@ -46,6 +46,7 @@ import {TUI_SWITCH_OPTIONS, type TuiSwitchOptions} from './switch.options';
         '[class._native]': 'native',
     },
 })
+
 export class TuiSwitch implements DoCheck, OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
