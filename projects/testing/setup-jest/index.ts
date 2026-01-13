@@ -21,15 +21,28 @@ Object.defineProperty(global.document, 'execCommand', {
 
 // you can also pass the mock implementation
 // to jest.fn as an argument
-(global.window as any).IntersectionObserver = jest.fn(() => ({
-    observe: jest.fn(),
-    unobserve: jest.fn(),
-    disconnect: jest.fn(),
-}));
+Object.defineProperty(global.window, 'IntersectionObserver', {
+    writable: true,
+    configurable: true,
+    value: jest.fn(() => ({
+        observe: jest.fn(),
+        unobserve: jest.fn(),
+        disconnect: jest.fn(),
+    })) as unknown as typeof IntersectionObserver,
+});
 
-global.window.resizeTo = (width) => {
-    (global.window as any).innerWidth = width || global.window.innerWidth;
-    (global.window as any).innerHeight = width || global.window.innerHeight;
+global.window.resizeTo = (width?: number): void => {
+    const newWidth = width ?? global.window.innerWidth;
+    Object.defineProperty(global.window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: newWidth,
+    });
+    Object.defineProperty(global.window, 'innerHeight', {
+        writable: true,
+        configurable: true,
+        value: newWidth,
+    });
 
     // Simulate window resize events
     global.window.dispatchEvent(new Event('resize', {bubbles: true, cancelable: true}));
