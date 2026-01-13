@@ -1,7 +1,13 @@
-import {Directive} from '@angular/core';
-import {TuiElement} from '@taiga-ui/cdk/directives/element';
+import {Directive, ElementRef} from '@angular/core';
+import {tuiInjectElement} from '@taiga-ui/cdk/utils/dom';
 
 @Directive({
     selector: '[tuiResizable]',
 })
-export class TuiResizable extends TuiElement {}
+export class TuiResizable<T extends Element = HTMLElement> implements ElementRef<T> {
+    public nativeElement = tuiInjectElement<T>();
+
+    constructor() {
+        return new ElementRef<T>(this.nativeElement);
+    }
+}
